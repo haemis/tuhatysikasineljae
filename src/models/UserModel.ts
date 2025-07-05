@@ -276,4 +276,45 @@ export class UserModel {
       throw error;
     }
   }
+
+  /**
+   * Search user profiles by query, respecting privacy settings
+   */
+  static async searchProfiles(query: string, options: { limit?: number; offset?: number; excludeTelegramId?: number } = {}): Promise<UserProfile[]> {
+    const { limit = 10, offset = 0, excludeTelegramId } = options;
+    const searchQuery = `
+      SELECT * FROM users 
+      WHERE is_active = true 
+        AND (privacy_settings->>'allow_search')::boolean = true
+        ${excludeTelegramId ? 'AND telegram_id != $5' : ''}
+        AND (
+          to_tsvector('english', name) @@ plainto_tsquery('english', $1) OR
+          to_tsvector('english', title) @@ plainto_tsquery('english', $1) OR
+          to_tsvector('english', description) @@ plainto_tsquery('english', $1) OR
+          name ILIKE $2 OR
+          title ILIKE $2 OR
+          description ILIKE $2
+        )
+      ORDER BY 
+        ts_rank(to_tsvector('english', name), plainto_tsquery('english', $1)) +
+        ts_rank(to_tsvector('english', title), plainto_tsquery('english', $1)) +
+        ts_rank(to_tsvector('english', description), plainto_tsquery('english', $1)) DESC
+      LIMIT $3 OFFSET $4
+    `;
+    const searchTerm = `%${query}%`;
+    const values = [query, searchTerm, limit, offset];
+    if (excludeTelegramId) values.push(excludeTelegramId);
+    try {
+      const result = await db.query(searchQuery, values);
+      return result.rows.map((row: any) => ({
+        ...row,
+        privacy_settings: JSON.parse(row.privacy_settings),
+        created_at: new Date(row.created_at),
+        updated_at: new Date(row.updated_at)
+      }));
+    } catch (error) {
+      logger.error('Error searching profiles:', error);
+      throw error;
+    }
+  }
 } 
