@@ -23,6 +23,8 @@ import NotificationService from '../utils/notifications';
 import { userCache, connectionCache, searchCache } from '../utils/cache';
 import { performanceMonitor } from '../utils/performance';
 import { adminSecurityCommand, adminSecurityEventsCommand, adminBlockUserCommand, adminUnblockUserCommand, adminComplianceCommand, adminRetentionCommand, adminPrivacyRequestsCommand } from './commands/adminSecurity';
+import { advancedSearchFiltersCommand, handleAdvancedSearchFilters, bulkOperationsCommand, bulkExportCommand, networkInsightsCommand, integrationsCommand, verifyLinkedInCommand, verifyGitHubCommand, integrationStatusCommand } from './commands/advancedFeatures';
+import { adminOptimizationCommand, adminOptimizeDatabaseCommand, adminOptimizeCacheCommand, adminOptimizeMemoryCommand, adminOptimizationTrendsCommand } from './commands/adminOptimization';
 
 // Validate configuration
 validateConfig();
@@ -144,6 +146,23 @@ bot.command('adminunblockuser', adminUnblockUserCommand);
 bot.command('admincompliance', adminComplianceCommand);
 bot.command('adminretention', adminRetentionCommand);
 bot.command('adminprivacyrequests', adminPrivacyRequestsCommand);
+
+// Week 15: Advanced Features
+bot.command('advancedfilters', handleAdvancedSearchFilters);
+bot.command('bulkoperations', bulkOperationsCommand);
+bot.command('bulkexport', bulkExportCommand);
+bot.command('bulkinsights', networkInsightsCommand);
+bot.command('integrations', integrationsCommand);
+bot.command('verifylinkedin', verifyLinkedInCommand);
+bot.command('verifygithub', verifyGitHubCommand);
+bot.command('integrationstatus', integrationStatusCommand);
+
+// Week 16: System Optimization
+bot.command('adminoptimization', adminOptimizationCommand);
+bot.command('adminoptimizedb', adminOptimizeDatabaseCommand);
+bot.command('adminoptimizecache', adminOptimizeCacheCommand);
+bot.command('adminoptimizememory', adminOptimizeMemoryCommand);
+bot.command('adminoptimizationtrends', adminOptimizationTrendsCommand);
 
 // Handle unknown commands
 bot.on('text', async (ctx) => {
