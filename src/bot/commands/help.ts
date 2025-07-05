@@ -1,71 +1,74 @@
 import { Context } from 'telegraf';
+import analytics from '../../utils/analytics';
 import logger from '../../utils/logger';
 
 export const helpCommand = async (ctx: Context): Promise<void> => {
   try {
-    const helpMessage = `
-🤖 *Virtual Business Card Bot - Help Guide*
+    const userId = ctx.from?.id;
+    if (!userId) {
+      await ctx.reply('Error: Could not identify user.');
+      return;
+    }
 
-*📋 Profile Management:*
+    const helpMessage = `
+🤖 *Telegram Business Card Bot - Help*
+
+*Profile Management:*
+• /start - Welcome message and bot introduction
 • /profile - Create or edit your professional profile
-• /myprofile - View your own profile  
+• /myprofile - View your own profile
 • /settings - Manage privacy settings
 
-*🔍 Discovery & Search:*
-• /search [query] - Search for professionals
+*Search & Discovery:*
+• /search [query] - Basic search for professionals
+• /advancedsearch - Advanced search with filters
+  - Use filters: industry, skills, location, experience, availability
+  - Example: /advancedsearch industry:Technology skills:JavaScript,React
+• /recommendations - Get personalized connection suggestions
+
+*Networking:*
+• /connect @username - Send connection request
+• /requests - View pending connection requests
+• /accept @username - Accept connection request
+• /decline @username - Decline connection request
+• /connections - View your connections
+• /view @username - View someone's profile
+
+*Navigation:*
 • /next - Next page of search results
 • /prev - Previous page of search results
+• /nextadvanced - Next page of advanced search
+• /prevadvanced - Previous page of advanced search
 
-*🤝 Networking:*
-• /connect [username|user_id] - Send connection request
-• /requests - View pending connection requests
-• /accept [user_id] - Accept a connection request
-• /decline [user_id] - Decline a connection request
-• /connections - View your accepted connections
-• /view [username|user_id] - View someone's profile
+*Feedback & Support:*
+• /feedback [message] - Submit feedback or suggestions
+• /help - Show this help message
 
-*📖 Examples:*
-• /search "software engineer"
-• /search "product manager"
-• /connect john_doe
-• /connect 123456789
-• /view jane_smith
-• /accept 123456789
-• /decline 123456789
+*Admin Commands (Admin Only):*
+• /adminstats - View system statistics
+• /adminuser <user_id> - View user details
+• /adminmaintenance - Run system maintenance
+• /adminratelimit <user_id> - Reset user rate limits
 
-*⚙️ Privacy Settings:*
-• profile_visible on/off - Show/hide your profile
-• allow_search on/off - Allow others to find you
-• allow_connections on/off - Accept connection requests
-• show_github on/off - Show/hide GitHub username
-• show_linkedin on/off - Show/hide LinkedIn URL
-• show_website on/off - Show/hide website URL
-• show_world_id on/off - Show/hide World ID
+*Advanced Search Filters:*
+• industry: [Technology, Healthcare, Finance, etc.]
+• skills: [JavaScript, Python, React, etc.]
+• location: [City, Country]
+• experience: [entry, mid, senior, executive]
+• availability: [full-time, part-time, contract, freelance]
 
-*💡 Tips:*
-• Use quotes for multi-word searches: /search "machine learning"
-• You can have up to 10 pending connection requests
-• Search results show 5 profiles per page
-• Use /next and /prev to navigate search results
-• Privacy settings control what others can see about you
+*Examples:*
+• /advancedsearch industry:Technology skills:JavaScript,React
+• /advancedsearch location:San Francisco experience:senior
+• /advancedsearch skills:Python,Machine Learning availability:contract
 
-*🆘 Need Help?*
-If you encounter issues, try:
-1. Check your profile exists (/myprofile)
-2. Verify privacy settings (/settings)
-3. Contact the bot administrator
-
-*📊 Your Stats:*
-Use /myprofile to see your profile and /connections to see your network.
+For more information, visit our documentation or contact support.
     `;
 
-    await ctx.reply(helpMessage, { 
-      parse_mode: 'Markdown'
-    });
-
-    const userId = ctx.from?.id;
-    const username = ctx.from?.username;
-    logger.info(`Help command executed for user ${userId} (${username})`);
+    await ctx.reply(helpMessage, { parse_mode: 'Markdown' });
+    
+    // Track help command usage
+    analytics.track(userId, 'help_viewed');
   } catch (error) {
     logger.error('Error in help command:', error);
     await ctx.reply('Sorry, something went wrong. Please try again later.');

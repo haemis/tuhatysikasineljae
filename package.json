@@ -21,7 +21,13 @@
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
     "docker:logs": "docker-compose logs -f bot",
-    "health-check": "node -e \"require('./dist/utils/healthCheck').default.checkHealth().then(console.log).catch(console.error)\""
+    "health-check": "node -e \"require('./dist/utils/healthCheck').default.checkHealth().then(console.log).catch(console.error)\"",
+    "performance:check": "node -e \"require('./dist/utils/performance').performanceMonitor.getPerformanceSummary().then(console.log).catch(console.error)\"",
+    "cache:stats": "node -e \"const { userCache, connectionCache, searchCache } = require('./dist/utils/cache'); console.log('User Cache:', userCache.getStats()); console.log('Connection Cache:', connectionCache.getStats()); console.log('Search Cache:', searchCache.getStats());\"",
+    "cache:clear": "node -e \"const { userCache, connectionCache, searchCache } = require('./dist/utils/cache'); userCache.clear(); connectionCache.clear(); searchCache.clear(); console.log('All caches cleared');\"",
+    "test:advanced": "jest --testPathPattern=advanced",
+    "test:performance": "jest --testPathPattern=performance",
+    "test:cache": "jest --testPathPattern=cache"
   },
   "keywords": [
     "telegram",

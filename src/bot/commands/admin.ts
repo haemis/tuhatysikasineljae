@@ -4,6 +4,8 @@ import { ConnectionModel } from '../../models/ConnectionModel';
 import analytics from '../../utils/analytics';
 import rateLimiter from '../../utils/rateLimiter';
 import conversationManager from '../../utils/conversationManager';
+import { performanceMonitor } from '../../utils/performance';
+import { userCache, connectionCache, searchCache } from '../../utils/cache';
 import logger from '../../utils/logger';
 
 // Admin user IDs (should be moved to environment variables in production)
@@ -32,6 +34,10 @@ export const adminStatsCommand = async (ctx: Context): Promise<void> => {
     const totalConnections = await ConnectionModel.getConnectionsCount(0); // This needs to be fixed
     const analyticsSummary = analytics.getSummary();
     const activeConversations = conversationManager.getActiveConversations().length;
+    const performanceSummary = performanceMonitor.getPerformanceSummary();
+    const userCacheStats = userCache.getStats();
+    const connectionCacheStats = connectionCache.getStats();
+    const searchCacheStats = searchCache.getStats();
 
     const statsMessage = `
 📊 *System Statistics*
@@ -45,6 +51,24 @@ export const adminStatsCommand = async (ctx: Context): Promise<void> => {
 • Total connections: ${totalConnections}
 • Active conversations: ${activeConversations}
 
+*Performance:*
+• Total operations: ${performanceSummary.totalOperations}
+• Average response time: ${performanceSummary.averageResponseTime}ms
+• Slow operations (>1s): ${performanceSummary.slowOperations}
+• Total queries: ${performanceSummary.totalQueries}
+• Average query time: ${performanceSummary.averageQueryTime}ms
+• Slow queries (>500ms): ${performanceSummary.slowQueries}
+
+*Memory Usage:*
+• RSS: ${performanceSummary.memoryUsage.rss}MB
+• Heap Used: ${performanceSummary.memoryUsage.heapUsed}MB
+• Heap Total: ${performanceSummary.memoryUsage.heapTotal}MB
+
+*Cache Performance:*
+• User cache: ${userCacheStats.hitRate}% hit rate (${userCacheStats.size} entries)
+• Connection cache: ${connectionCacheStats.hitRate}% hit rate (${connectionCacheStats.size} entries)
+• Search cache: ${searchCacheStats.hitRate}% hit rate (${searchCacheStats.size} entries)
+
 *Analytics:*
 • Total events tracked: ${analyticsSummary.totalEvents}
 • Most common actions: ${Object.entries(analyticsSummary.actionCounts)
@@ -56,6 +80,8 @@ export const adminStatsCommand = async (ctx: Context): Promise<void> => {
 *System Health:*
 • Rate limiter active
 • Analytics tracking enabled
+• Performance monitoring active
+• Cache system operational
 • Database connection: ✅
     `;
 
@@ -66,6 +92,134 @@ export const adminStatsCommand = async (ctx: Context): Promise<void> => {
   } catch (error) {
     logger.error('Error in admin stats command:', error);
     await ctx.reply('Error retrieving system statistics.');
+  }
+};
+
+/**
+ * Admin command for performance monitoring
+ */
+export const adminPerformanceCommand = async (ctx: Context): Promise<void> => {
+  try {
+    const userId = ctx.from?.id;
+    if (!userId || !isAdmin(userId)) {
+      await ctx.reply('Access denied. Admin privileges required.');
+      return;
+    }
+
+    const performanceSummary = performanceMonitor.getPerformanceSummary();
+    const recentMetrics = performanceMonitor.getRecentMetrics(5); // Last 5 minutes
+    const recentQueries = performanceMonitor.getRecentQueries(5); // Last 5 minutes
+
+    let message = `
+⚡ *Performance Monitoring*
+
+*Overall Performance:*
+• Total operations: ${performanceSummary.totalOperations}
+• Average response time: ${performanceSummary.averageResponseTime}ms
+• Slow operations: ${performanceSummary.slowOperations}
+
+*Database Performance:*
+• Total queries: ${performanceSummary.totalQueries}
+• Average query time: ${performanceSummary.averageQueryTime}ms
+• Slow queries: ${performanceSummary.slowQueries}
+
+*Memory Usage:*
+• RSS: ${performanceSummary.memoryUsage.rss}MB
+• Heap Used: ${performanceSummary.memoryUsage.heapUsed}MB
+• Heap Total: ${performanceSummary.memoryUsage.heapTotal}MB
+• External: ${performanceSummary.memoryUsage.external}MB
+
+*Top Slow Operations:*
+`;
+
+    performanceSummary.topSlowOperations.forEach((op, index) => {
+      message += `• ${index + 1}. ${op.operation}: ${op.avgDuration}ms (${op.count} calls)\n`;
+    });
+
+    message += `\n*Top Slow Queries:*\n`;
+
+    performanceSummary.topSlowQueries.forEach((query, index) => {
+      message += `• ${index + 1}. ${query.query}: ${query.avgDuration}ms (${query.count} calls)\n`;
+    });
+
+    if (recentMetrics.length > 0) {
+      message += `\n*Recent Activity (5min):*\n`;
+      recentMetrics.slice(-5).forEach(metric => {
+        message += `• ${metric.operation}: ${metric.duration}ms\n`;
+      });
+    }
+
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+    
+    // Track admin action
+    analytics.track(userId, 'admin_performance_viewed');
+  } catch (error) {
+    logger.error('Error in admin performance command:', error);
+    await ctx.reply('Error retrieving performance data.');
+  }
+};
+
+/**
+ * Admin command for cache management
+ */
+export const adminCacheCommand = async (ctx: Context): Promise<void> => {
+  try {
+    const userId = ctx.from?.id;
+    if (!userId || !isAdmin(userId)) {
+      await ctx.reply('Access denied. Admin privileges required.');
+      return;
+    }
+
+    const message = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
+    const parts = message ? message.split(' ') : [];
+    const action = parts.length > 1 ? parts[1]?.toLowerCase() : '';
+
+    if (action === 'clear') {
+      userCache.clear();
+      connectionCache.clear();
+      searchCache.clear();
+      await ctx.reply('✅ All caches cleared successfully.');
+    } else if (action === 'stats') {
+      const userCacheStats = userCache.getStats();
+      const connectionCacheStats = connectionCache.getStats();
+      const searchCacheStats = searchCache.getStats();
+
+      const statsMessage = `
+🗄️ *Cache Statistics*
+
+*User Cache:*
+• Size: ${userCacheStats.size} entries
+• Hit rate: ${userCacheStats.hitRate}%
+• Hits: ${userCacheStats.hits}
+• Misses: ${userCacheStats.misses}
+
+*Connection Cache:*
+• Size: ${connectionCacheStats.size} entries
+• Hit rate: ${connectionCacheStats.hitRate}%
+• Hits: ${connectionCacheStats.hits}
+• Misses: ${connectionCacheStats.misses}
+
+*Search Cache:*
+• Size: ${searchCacheStats.size} entries
+• Hit rate: ${searchCacheStats.hitRate}%
+• Hits: ${searchCacheStats.hits}
+• Misses: ${searchCacheStats.misses}
+
+*Commands:*
+• /admincache clear - Clear all caches
+• /admincache stats - Show cache statistics
+      `;
+
+      await ctx.reply(statsMessage, { parse_mode: 'Markdown' });
+    } else {
+      await ctx.reply('Usage: /admincache [clear|stats]');
+    }
+    
+    // Track admin action
+    analytics.track(userId, 'admin_cache_managed', { action });
+  } catch (error) {
+    logger.error('Error in admin cache command:', error);
+    await ctx.reply('Error managing cache.');
   }
 };
 

@@ -15,14 +15,22 @@ import { connectionsCommand } from './commands/connections';
 import { viewCommand } from './commands/view';
 import { settingsCommand, handleSettingsConversation } from './commands/settings';
 import rateLimiter from '../utils/rateLimiter';
-import { adminStatsCommand, adminUserCommand, adminMaintenanceCommand, adminRateLimitCommand } from './commands/admin';
+import { adminStatsCommand, adminUserCommand, adminMaintenanceCommand, adminRateLimitCommand, adminPerformanceCommand, adminCacheCommand } from './commands/admin';
 import { feedbackCommand, handleFeedbackConversation } from './commands/feedback';
+import { advancedSearchCommand, handleAdvancedSearchConversation, nextAdvancedSearchPageCommand, prevAdvancedSearchPageCommand } from './commands/advancedSearch';
+import { recommendationsCommand } from './commands/recommendations';
+import NotificationService from '../utils/notifications';
+import { userCache, connectionCache, searchCache } from '../utils/cache';
+import { performanceMonitor } from '../utils/performance';
 
 // Validate configuration
 validateConfig();
 
 // Create bot instance
 const bot = new Telegraf(botConfig.token);
+
+// Initialize notification service
+const notificationService = new NotificationService(bot);
 
 // Middleware for logging
 bot.use(async (ctx, next) => {
@@ -40,6 +48,9 @@ bot.use(async (ctx, next) => {
   
   const ms = Date.now() - start;
   logger.info(`Response time: ${ms}ms`);
+  
+  // Track performance
+  performanceMonitor.trackOperation('bot.message_processed', ms, { userId, username });
 });
 
 // Middleware for rate limiting
@@ -70,6 +81,10 @@ bot.use(async (ctx, next) => {
     } else if (conversation?.step === 'feedback_input') {
       // Handle feedback conversation
       await handleFeedbackConversation(ctx);
+      return; // Don't continue to command handlers
+    } else if (conversation?.step === 'advanced_search_setup') {
+      // Handle advanced search conversation
+      await handleAdvancedSearchConversation(ctx);
       return; // Don't continue to command handlers
     } else if (conversation?.step.startsWith('name') || conversation?.step.startsWith('title') || 
                conversation?.step.startsWith('description') || conversation?.step.startsWith('github') ||
@@ -114,7 +129,13 @@ bot.command('adminstats', adminStatsCommand);
 bot.command('adminuser', adminUserCommand);
 bot.command('adminmaintenance', adminMaintenanceCommand);
 bot.command('adminratelimit', adminRateLimitCommand);
+bot.command('adminperformance', adminPerformanceCommand);
+bot.command('admincache', adminCacheCommand);
 bot.command('feedback', feedbackCommand);
+bot.command('advancedsearch', advancedSearchCommand);
+bot.command('nextadvanced', nextAdvancedSearchPageCommand);
+bot.command('prevadvanced', prevAdvancedSearchPageCommand);
+bot.command('recommendations', recommendationsCommand);
 
 // Handle unknown commands
 bot.on('text', async (ctx) => {
@@ -138,6 +159,18 @@ setInterval(() => {
   conversationManager.cleanupExpiredConversations();
   rateLimiter.cleanup();
 }, 5 * 60 * 1000);
+
+// Cache cleanup every 10 minutes
+setInterval(() => {
+  userCache.cleanup();
+  connectionCache.cleanup();
+  searchCache.cleanup();
+}, 10 * 60 * 1000);
+
+// Performance metrics cleanup every hour
+setInterval(() => {
+  performanceMonitor.clearOldMetrics(24);
+}, 60 * 60 * 1000);
 
 // Graceful shutdown
 process.once('SIGINT', () => {
