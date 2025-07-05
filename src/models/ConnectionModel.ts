@@ -16,6 +16,12 @@ export class ConnectionModel {
       throw new Error('One or both users do not exist');
     }
 
+    // Check receiver's privacy settings
+    const receiverProfile = await UserModel.getProfile(receiverId);
+    if (!receiverProfile || !receiverProfile.privacy_settings.allow_connections) {
+      throw new Error('This user is not accepting new connections.');
+    }
+
     // Check if connection already exists
     const existingConnection = await this.getConnection(requesterId, receiverId);
     if (existingConnection) {
