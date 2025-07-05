@@ -34,7 +34,15 @@
     "compliance:report": "node -e \"require('./dist/utils/compliance').complianceManager.generateComplianceReport().then(console.log).catch(console.error)\"",
     "mobile:setup": "cd mobile-app && npm install",
     "mobile:android": "cd mobile-app && npm run android",
-    "mobile:ios": "cd mobile-app && npm run ios"
+    "mobile:ios": "cd mobile-app && npm run ios",
+    "optimization:analyze": "node -e \"require('./dist/utils/optimization').systemOptimizer.analyzeSystemPerformance().then(console.log).catch(console.error)\"",
+    "optimization:database": "node -e \"require('./dist/utils/optimization').systemOptimizer.optimizeDatabaseQueries().then(console.log).catch(console.error)\"",
+    "optimization:cache": "node -e \"require('./dist/utils/optimization').systemOptimizer.optimizeCachePerformance().then(console.log).catch(console.error)\"",
+    "optimization:memory": "node -e \"require('./dist/utils/optimization').systemOptimizer.optimizeMemoryUsage().then(console.log).catch(console.error)\"",
+    "optimization:trends": "node -e \"console.log(require('./dist/utils/optimization').systemOptimizer.getOptimizationTrends())\"",
+    "advanced:search": "node -e \"console.log('Advanced search features available via bot commands')\"",
+    "advanced:bulk": "node -e \"console.log('Bulk operations available via bot commands')\"",
+    "advanced:integrations": "node -e \"console.log('Integration features available via bot commands')\""
   },
   "keywords": [
     "telegram",
