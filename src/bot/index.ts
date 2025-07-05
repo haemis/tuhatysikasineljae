@@ -13,7 +13,8 @@ import { acceptCommand } from './commands/accept';
 import { declineCommand } from './commands/decline';
 import { connectionsCommand } from './commands/connections';
 import { viewCommand } from './commands/view';
-import { settingsCommand } from './commands/settings';
+import { settingsCommand, handleSettingsConversation } from './commands/settings';
+import rateLimiter from '../utils/rateLimiter';
 
 // Validate configuration
 validateConfig();
@@ -39,14 +40,40 @@ bot.use(async (ctx, next) => {
   logger.info(`Response time: ${ms}ms`);
 });
 
+// Middleware for rate limiting
+bot.use(async (ctx, next) => {
+  const userId = ctx.from?.id;
+  
+  if (userId && rateLimiter.isRateLimited(userId)) {
+    const timeUntilReset = rateLimiter.getTimeUntilReset(userId);
+    const seconds = Math.ceil(timeUntilReset / 1000);
+    await ctx.reply(`⚠️ Rate limit exceeded. Please wait ${seconds} seconds before making more requests.`);
+    return;
+  }
+  
+  await next();
+});
+
 // Middleware for conversation handling
 bot.use(async (ctx, next) => {
   const userId = ctx.from?.id;
   
   if (userId && conversationManager.hasActiveConversation(userId)) {
-    // Handle conversation flow
-    await handleProfileConversation(ctx);
-    return; // Don't continue to command handlers
+    const conversation = conversationManager.getConversation(userId);
+    
+    if (conversation?.step === 'settings') {
+      // Handle settings conversation
+      await handleSettingsConversation(ctx);
+      return; // Don't continue to command handlers
+    } else if (conversation?.step.startsWith('name') || conversation?.step.startsWith('title') || 
+               conversation?.step.startsWith('description') || conversation?.step.startsWith('github') ||
+               conversation?.step.startsWith('linkedin') || conversation?.step.startsWith('website') ||
+               conversation?.step.startsWith('world_id') || conversation?.step.startsWith('confirm') ||
+               conversation?.step === 'edit_confirm') {
+      // Handle profile conversation
+      await handleProfileConversation(ctx);
+      return; // Don't continue to command handlers
+    }
   }
   
   await next();
@@ -95,9 +122,10 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// Cleanup expired conversations every 5 minutes
+// Cleanup expired conversations and rate limits every 5 minutes
 setInterval(() => {
   conversationManager.cleanupExpiredConversations();
+  rateLimiter.cleanup();
 }, 5 * 60 * 1000);
 
 // Graceful shutdown

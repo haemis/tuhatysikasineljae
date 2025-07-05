@@ -12,7 +12,7 @@ export const viewCommand = async (ctx: Context): Promise<void> => {
     }
 
     const message = ctx.message && 'text' in ctx.message ? ctx.message.text : '';
-    const parts = message.split(' ');
+    const parts = message ? message.split(' ') : [];
     const target = parts.length > 1 ? parts[1].trim() : '';
     if (!target) {
       await ctx.reply('Please specify the username or user ID to view. Example: /view johndoe or /view 123456789');

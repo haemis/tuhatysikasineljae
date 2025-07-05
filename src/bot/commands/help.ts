@@ -4,34 +4,59 @@ import logger from '../../utils/logger';
 export const helpCommand = async (ctx: Context): Promise<void> => {
   try {
     const helpMessage = `
-📚 *Business Card Bot - Help*
+🤖 *Virtual Business Card Bot - Help Guide*
 
-*Profile Management:*
+*📋 Profile Management:*
 • /profile - Create or edit your professional profile
-• /myprofile - View your own profile
-• /settings - Manage your privacy settings
+• /myprofile - View your own profile  
+• /settings - Manage privacy settings
 
-*Networking:*
+*🔍 Discovery & Search:*
 • /search [query] - Search for professionals
-• /connect @username - Send connection request
+• /next - Next page of search results
+• /prev - Previous page of search results
+
+*🤝 Networking:*
+• /connect [username|user_id] - Send connection request
 • /requests - View pending connection requests
-• /accept @username - Accept a connection request
-• /decline @username - Decline a connection request
-• /connections - View your connections
-• /view @username - View someone's profile
+• /accept [user_id] - Accept a connection request
+• /decline [user_id] - Decline a connection request
+• /connections - View your accepted connections
+• /view [username|user_id] - View someone's profile
 
-*Examples:*
-• /search developer
-• /connect @john_doe
-• /view @jane_smith
+*📖 Examples:*
+• /search "software engineer"
+• /search "product manager"
+• /connect john_doe
+• /connect 123456789
+• /view jane_smith
+• /accept 123456789
+• /decline 123456789
 
-*Tips:*
-• Use @username to mention specific users
-• Search works with names, titles, and descriptions
+*⚙️ Privacy Settings:*
+• profile_visible on/off - Show/hide your profile
+• allow_search on/off - Allow others to find you
+• allow_connections on/off - Accept connection requests
+• show_github on/off - Show/hide GitHub username
+• show_linkedin on/off - Show/hide LinkedIn URL
+• show_website on/off - Show/hide website URL
+• show_world_id on/off - Show/hide World ID
+
+*💡 Tips:*
+• Use quotes for multi-word searches: /search "machine learning"
 • You can have up to 10 pending connection requests
-• Your profile is visible to other users unless you change privacy settings
+• Search results show 5 profiles per page
+• Use /next and /prev to navigate search results
+• Privacy settings control what others can see about you
 
-Need more help? Contact the bot administrator.
+*🆘 Need Help?*
+If you encounter issues, try:
+1. Check your profile exists (/myprofile)
+2. Verify privacy settings (/settings)
+3. Contact the bot administrator
+
+*📊 Your Stats:*
+Use /myprofile to see your profile and /connections to see your network.
     `;
 
     await ctx.reply(helpMessage, { 

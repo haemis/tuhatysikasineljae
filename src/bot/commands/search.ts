@@ -1,6 +1,7 @@
 import { Context } from 'telegraf';
 import { UserModel } from '../../models/UserModel';
 import logger from '../../utils/logger';
+import analytics from '../../utils/analytics';
 
 // In-memory search state for pagination (per user)
 const searchState: Record<number, { query: string; page: number; results: any[] }> = {};
@@ -40,6 +41,9 @@ export const searchCommand = async (ctx: Context): Promise<void> => {
     searchState[userId] = { query, page: 0, results };
 
     await sendSearchResults(ctx, userId, 0);
+    
+    // Track search analytics
+    analytics.track(userId, 'search_performed', { query, results_count: results.length });
   } catch (error) {
     logger.error('Error in search command:', error);
     await ctx.reply('Sorry, something went wrong. Please try again later.');
@@ -102,6 +106,9 @@ export const nextSearchPageCommand = async (ctx: Context): Promise<void> => {
   }
   const nextPage = searchState[userId].page + 1;
   await sendSearchResults(ctx, userId, nextPage);
+  
+  // Track pagination analytics
+  analytics.track(userId, 'search_next_page', { page: nextPage, query: searchState[userId].query });
 };
 
 export const prevSearchPageCommand = async (ctx: Context): Promise<void> => {
@@ -112,4 +119,7 @@ export const prevSearchPageCommand = async (ctx: Context): Promise<void> => {
   }
   const prevPage = Math.max(0, searchState[userId].page - 1);
   await sendSearchResults(ctx, userId, prevPage);
+  
+  // Track pagination analytics
+  analytics.track(userId, 'search_prev_page', { page: prevPage, query: searchState[userId].query });
 }; 
