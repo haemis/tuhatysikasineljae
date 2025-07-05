@@ -1,9 +1,10 @@
-import { Telegraf, Context } from 'telegraf';
+import { Telegraf } from 'telegraf';
 import { botConfig, validateConfig } from '../config';
 import logger from '../utils/logger';
+import conversationManager from '../utils/conversationManager';
 import { startCommand } from './commands/start';
 import { helpCommand } from './commands/help';
-import { profileCommand } from './commands/profile';
+import { profileCommand, handleProfileConversation } from './commands/profile';
 import { myProfileCommand } from './commands/myProfile';
 import { searchCommand } from './commands/search';
 import { connectCommand } from './commands/connect';
@@ -25,7 +26,10 @@ bot.use(async (ctx, next) => {
   const start = Date.now();
   const userId = ctx.from?.id;
   const username = ctx.from?.username;
-  const message = ctx.message?.text || 'No text';
+  let message = 'No text';
+  if (ctx.message && 'text' in ctx.message) {
+    message = ctx.message.text;
+  }
 
   logger.info(`Incoming message from ${username} (${userId}): ${message}`);
   
@@ -33,6 +37,19 @@ bot.use(async (ctx, next) => {
   
   const ms = Date.now() - start;
   logger.info(`Response time: ${ms}ms`);
+});
+
+// Middleware for conversation handling
+bot.use(async (ctx, next) => {
+  const userId = ctx.from?.id;
+  
+  if (userId && conversationManager.hasActiveConversation(userId)) {
+    // Handle conversation flow
+    await handleProfileConversation(ctx);
+    return; // Don't continue to command handlers
+  }
+  
+  await next();
 });
 
 // Error handling
@@ -75,6 +92,11 @@ bot.on('text', async (ctx) => {
     );
   }
 });
+
+// Cleanup expired conversations every 5 minutes
+setInterval(() => {
+  conversationManager.cleanupExpiredConversations();
+}, 5 * 60 * 1000);
 
 // Graceful shutdown
 process.once('SIGINT', () => {
