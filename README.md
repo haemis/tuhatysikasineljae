@@ -11,13 +11,19 @@ A professional networking bot for Telegram that allows users to create digital b
 - ✅ **Privacy Controls**: Manage profile visibility and settings
 - ✅ **Analytics Tracking**: Monitor user engagement and system performance
 
-### Advanced Features (Weeks 8-9)
+### Advanced Features (Weeks 8-11)
 - ✅ **Admin Commands**: System monitoring and user management
 - ✅ **Health Monitoring**: Comprehensive system health checks
 - ✅ **Feedback System**: User feedback collection and processing
 - ✅ **Deployment Automation**: Docker, PM2, and automated scripts
 - ✅ **Performance Monitoring**: Real-time system resource monitoring
 - ✅ **Testing Framework**: Comprehensive test utilities and automation
+- ✅ **Advanced Search**: Filter by industry, skills, location, experience, availability
+- ✅ **Recommendation System**: AI-powered connection suggestions
+- ✅ **Notification System**: Automated user notifications and digests
+- ✅ **Caching System**: Multi-level caching for improved performance
+- ✅ **Performance Optimization**: Database connection pooling and query optimization
+- ✅ **Memory Management**: Efficient memory usage and garbage collection
 
 ### Planned Features (Future Phases)
 - 🔍 **Advanced Search**: Filter by industry, location, skills
@@ -158,6 +164,14 @@ The bot includes comprehensive admin functionality for monitoring and management
 /adminratelimit <user_id> - Reset rate limits for a user
 ```
 
+### Admin Commands (Admin Only)
+- `/adminstats` - View system statistics
+- `/adminuser <user_id>` - View user details
+- `/adminmaintenance` - Run system maintenance
+- `/adminratelimit <user_id>` - Reset user rate limits
+- `/adminperformance` - View performance metrics and monitoring
+- `/admincache [clear|stats]` - Manage cache system
+
 ## 🔧 Monitoring & Health Checks
 
 ### Automated Monitoring
@@ -271,6 +285,19 @@ Dockerfile               # Docker container definition
 - `/adminuser <user_id>` - View user details
 - `/adminmaintenance` - Run system maintenance
 - `/adminratelimit <user_id>` - Reset user rate limits
+- `/adminperformance` - View performance metrics and monitoring
+- `/admincache [clear|stats]` - Manage cache system
+
+### Search & Discovery
+- `/search [query]` - Basic search for professionals
+- `/advancedsearch` - Advanced search with filters
+  - Use filters: industry, skills, location, experience, availability
+  - Example: /advancedsearch industry:Technology skills:JavaScript,React
+- `/recommendations` - Get personalized connection suggestions
+- `/next` - Next page of search results
+- `/prev` - Previous page of search results
+- `/nextadvanced` - Next page of advanced search
+- `/prevadvanced` - Previous page of advanced search
 
 ## 🗄️ Database Schema
 
@@ -342,6 +369,16 @@ npm run docker:build # Build Docker image
 npm run docker:run   # Run with Docker Compose
 npm run docker:stop  # Stop Docker services
 npm run docker:logs  # View Docker logs
+
+# Performance & Cache
+npm run performance:check # Check performance metrics
+npm run cache:stats       # View cache statistics
+npm run cache:clear       # Clear all caches
+
+# Testing
+npm run test:advanced     # Test advanced features
+npm run test:performance  # Test performance utilities
+npm run test:cache        # Test caching system
 ```
 
 ## 📈 Analytics & Monitoring
@@ -445,13 +482,20 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - ✅ Privacy controls
 - ✅ Analytics tracking
 
-### Completed (Weeks 8-9)
+### Completed (Weeks 8-11)
 - ✅ Admin commands
 - ✅ Health monitoring
 - ✅ Feedback system
 - ✅ Deployment automation
 - ✅ Docker support
 - ✅ Testing utilities
+- ✅ Advanced search with filters
+- ✅ AI-powered recommendations
+- ✅ Notification system
+- ✅ Multi-level caching
+- ✅ Performance optimization
+- ✅ Database connection pooling
+- ✅ Memory management
 
 ### Future Enhancements
 - 🔄 Web dashboard

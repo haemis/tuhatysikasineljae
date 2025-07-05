@@ -317,4 +317,100 @@ export class UserModel {
       throw error;
     }
   }
+
+  /**
+   * Advanced search with filters
+   */
+  static async advancedSearch(filters: {
+    industry?: string;
+    skills?: string[];
+    location?: string;
+    experience?: 'entry' | 'mid' | 'senior' | 'executive';
+    availability?: 'full-time' | 'part-time' | 'contract' | 'freelance';
+  }, options: { limit?: number; offset?: number; excludeTelegramId?: number } = {}): Promise<UserProfile[]> {
+    const { limit = 10, offset = 0, excludeTelegramId } = options;
+    
+    let query = 'SELECT * FROM users WHERE is_active = true';
+    const values: any[] = [];
+    let paramIndex = 1;
+    const conditions: string[] = [];
+
+    // Add exclusion filter
+    if (excludeTelegramId) {
+      conditions.push(`telegram_id != $${paramIndex}`);
+      values.push(excludeTelegramId);
+      paramIndex++;
+    }
+
+    // Add industry filter
+    if (filters.industry) {
+      conditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`);
+      values.push(`%${filters.industry}%`);
+      paramIndex++;
+    }
+
+    // Add skills filter
+    if (filters.skills && filters.skills.length > 0) {
+      const skillConditions = filters.skills.map(skill => {
+        conditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`);
+        values.push(`%${skill}%`);
+        paramIndex++;
+        return `$${paramIndex - 1}`;
+      });
+    }
+
+    // Add location filter (assuming location is stored in description or a separate field)
+    if (filters.location) {
+      conditions.push(`description ILIKE $${paramIndex}`);
+      values.push(`%${filters.location}%`);
+      paramIndex++;
+    }
+
+    // Add experience filter
+    if (filters.experience) {
+      const experienceKeywords = {
+        'entry': ['entry', 'junior', 'beginner', '0-2', '1-2'],
+        'mid': ['mid', 'intermediate', '3-5', '4-6'],
+        'senior': ['senior', 'lead', '5+', '6+'],
+        'executive': ['executive', 'director', 'vp', 'cto', 'ceo', 'manager']
+      };
+      
+      const keywords = experienceKeywords[filters.experience];
+      const experienceConditions = keywords.map(keyword => {
+        conditions.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`);
+        values.push(`%${keyword}%`);
+        paramIndex++;
+        return `$${paramIndex - 1}`;
+      });
+    }
+
+    // Add availability filter
+    if (filters.availability) {
+      conditions.push(`description ILIKE $${paramIndex}`);
+      values.push(`%${filters.availability}%`);
+      paramIndex++;
+    }
+
+    // Build final query
+    if (conditions.length > 0) {
+      query += ` AND (${conditions.join(' OR ')})`;
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    values.push(limit, offset);
+
+    try {
+      const result = await db.query(query, values);
+      
+      return result.rows.map((row: any) => ({
+        ...row,
+        privacy_settings: JSON.parse(row.privacy_settings),
+        created_at: new Date(row.created_at),
+        updated_at: new Date(row.updated_at)
+      }));
+    } catch (error) {
+      logger.error('Error in advanced search:', error);
+      throw error;
+    }
+  }
 } 
