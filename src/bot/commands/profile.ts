@@ -3,6 +3,7 @@ import { UserModel } from '../../models/UserModel';
 import conversationManager from '../../utils/conversationManager';
 import { validators, sanitizeInput, formatUrl, formatGithubUsername } from '../../utils/validators';
 import logger from '../../utils/logger';
+import analytics from '../../utils/analytics';
 
 export const profileCommand = async (ctx: Context): Promise<void> => {
   try {
@@ -379,6 +380,7 @@ async function handleProfileConfirm(ctx: Context, userId: number, message: strin
         const updatedProfile = await UserModel.updateProfile(userId, profileData);
         if (updatedProfile) {
           await ctx.reply('✅ Your profile has been updated successfully!');
+          analytics.track(userId, 'profile_updated', { has_github: !!data.github_username, has_linkedin: !!data.linkedin_url });
         } else {
           await ctx.reply('❌ Failed to update profile. Please try again.');
         }
@@ -386,6 +388,7 @@ async function handleProfileConfirm(ctx: Context, userId: number, message: strin
         // Create new profile
         await UserModel.createProfile(profileData);
         await ctx.reply('✅ Your profile has been created successfully! You can now use /search to find other professionals and /connect to send connection requests.');
+        analytics.track(userId, 'profile_created', { has_github: !!data.github_username, has_linkedin: !!data.linkedin_url });
       }
 
       conversationManager.endConversation(userId);
@@ -398,7 +401,8 @@ async function handleProfileConfirm(ctx: Context, userId: number, message: strin
     // Start over
     conversationManager.endConversation(userId);
     await ctx.reply('Profile creation cancelled. Use /profile to start again.');
+    analytics.track(userId, 'profile_cancelled');
   } else {
     await ctx.reply('Please send "yes" to save your profile or "no" to start over.');
   }
-} 
+}
