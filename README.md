@@ -9,12 +9,21 @@ A professional networking bot for Telegram that allows users to create digital b
 - ✅ **Connection System**: Send and manage connection requests
 - ✅ **Search & Discovery**: Find other professionals
 - ✅ **Privacy Controls**: Manage profile visibility and settings
+- ✅ **Analytics Tracking**: Monitor user engagement and system performance
+
+### Advanced Features (Weeks 8-9)
+- ✅ **Admin Commands**: System monitoring and user management
+- ✅ **Health Monitoring**: Comprehensive system health checks
+- ✅ **Feedback System**: User feedback collection and processing
+- ✅ **Deployment Automation**: Docker, PM2, and automated scripts
+- ✅ **Performance Monitoring**: Real-time system resource monitoring
+- ✅ **Testing Framework**: Comprehensive test utilities and automation
 
 ### Planned Features (Future Phases)
 - 🔍 **Advanced Search**: Filter by industry, location, skills
-- 📊 **Analytics**: Profile views, connection insights
 - 🔗 **Integrations**: LinkedIn, GitHub, calendar integration
 - 📱 **Mobile App**: Companion mobile application
+- 🌐 **Web Dashboard**: Admin dashboard for analytics
 
 ## 🛠️ Technology Stack
 
@@ -23,14 +32,20 @@ A professional networking bot for Telegram that allows users to create digital b
 - **Database**: PostgreSQL
 - **ORM**: Native PostgreSQL with connection pooling
 - **Logging**: Winston
-- **Validation**: Joi
+- **Validation**: Custom validators with sanitization
+- **Process Management**: PM2 (production)
+- **Containerization**: Docker & Docker Compose
+- **Testing**: Jest with custom test utilities
+- **Monitoring**: Custom health checks and analytics
 - **Hosting**: Cloud-based (AWS/GCP/Azure)
 
 ## 📋 Prerequisites
 
 - Node.js 18+ 
-- PostgreSQL 12+
+- PostgreSQL 15+
 - Telegram Bot Token (from @BotFather)
+- Docker (optional, for containerized deployment)
+- PM2 (optional, for production process management)
 
 ## 🚀 Quick Start
 
@@ -93,6 +108,100 @@ npm run build
 npm start
 ```
 
+## 🐳 Docker Deployment
+
+### Using Docker Compose (Recommended)
+```bash
+# Build and run with PostgreSQL
+docker-compose up -d
+
+# View logs
+docker-compose logs -f bot
+
+# Stop services
+docker-compose down
+```
+
+### Manual Docker Build
+```bash
+# Build image
+npm run docker:build
+
+# Run container
+docker run -d \
+  --name telegram-bot \
+  --env-file .env \
+  telegram-business-card-bot
+```
+
+## 📊 Admin Commands
+
+The bot includes comprehensive admin functionality for monitoring and management:
+
+### System Statistics
+```
+/adminstats - View system statistics and analytics
+```
+
+### User Management
+```
+/adminuser <user_id> - View detailed user information
+```
+
+### System Maintenance
+```
+/adminmaintenance - Run system cleanup and maintenance
+```
+
+### Rate Limit Management
+```
+/adminratelimit <user_id> - Reset rate limits for a user
+```
+
+## 🔧 Monitoring & Health Checks
+
+### Automated Monitoring
+```bash
+# Run monitoring script
+npm run monitor
+
+# Check system health
+npm run health-check
+```
+
+### Manual Health Checks
+```bash
+# Check PM2 status
+pm2 status
+
+# View logs
+pm2 logs telegram-business-card-bot
+
+# Monitor system resources
+htop
+```
+
+## 🧪 Testing
+
+### Run Tests
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Watch mode for development
+npm run test:watch
+```
+
+### Test Utilities
+The project includes comprehensive testing utilities:
+- Mock Telegram contexts
+- Database mocking
+- Rate limiting tests
+- Command response validation
+
 ## 📁 Project Structure
 
 ```
@@ -104,6 +213,8 @@ src/
 │   │   ├── profile.ts     # Profile management
 │   │   ├── search.ts      # User search
 │   │   ├── connect.ts     # Connection requests
+│   │   ├── admin.ts       # Admin commands
+│   │   ├── feedback.ts    # Feedback system
 │   │   └── ...           # Other commands
 │   └── index.ts           # Bot setup and configuration
 ├── database/              # Database layer
@@ -116,10 +227,22 @@ src/
 ├── types/                # TypeScript type definitions
 │   └── index.ts
 ├── utils/                # Utility functions
-│   └── logger.ts         # Logging configuration
+│   ├── logger.ts         # Logging configuration
+│   ├── analytics.ts      # Analytics tracking
+│   ├── rateLimiter.ts    # Rate limiting
+│   ├── healthCheck.ts    # Health monitoring
+│   ├── testUtils.ts      # Testing utilities
+│   └── validators.ts     # Input validation
 ├── config/               # Configuration management
 │   └── index.ts
 └── index.ts              # Application entry point
+
+scripts/
+├── deploy.sh             # Production deployment script
+└── monitor.sh            # System monitoring script
+
+docker-compose.yml        # Docker Compose configuration
+Dockerfile               # Docker container definition
 ```
 
 ## 🤖 Bot Commands
@@ -139,6 +262,15 @@ src/
 - `/decline @username` - Decline connection request
 - `/connections` - View your connections
 - `/view @username` - View someone's profile
+
+### Feedback
+- `/feedback [message]` - Submit feedback or suggestions
+
+### Admin Commands (Admin Only)
+- `/adminstats` - View system statistics
+- `/adminuser <user_id>` - View user details
+- `/adminmaintenance` - Run system maintenance
+- `/adminratelimit <user_id>` - Reset user rate limits
 
 ## 🗄️ Database Schema
 
@@ -193,101 +325,137 @@ npm run seed         # Seed database with test data
 # Testing
 npm test            # Run tests
 npm run test:watch  # Run tests in watch mode
+npm run test:coverage # Run tests with coverage
 
 # Linting
 npm run lint        # Check code style
 npm run lint:fix    # Fix code style issues
+npm run type-check  # TypeScript type checking
+
+# Deployment
+npm run deploy      # Automated deployment
+npm run monitor     # System monitoring
+npm run health-check # Health check
+
+# Docker
+npm run docker:build # Build Docker image
+npm run docker:run   # Run with Docker Compose
+npm run docker:stop  # Stop Docker services
+npm run docker:logs  # View Docker logs
 ```
 
-### Code Style
-- TypeScript strict mode enabled
-- ESLint configuration included
-- Prettier formatting (recommended)
+## 📈 Analytics & Monitoring
 
-## 📊 Monitoring & Analytics
-
-The bot includes built-in monitoring:
-- Request/response logging
-- Error tracking
+### Built-in Analytics
+- User engagement tracking
+- Command usage statistics
+- Error rate monitoring
 - Performance metrics
-- User analytics
 
-## 🔒 Security & Privacy
+### Health Monitoring
+- Database connectivity checks
+- System resource monitoring
+- Process status verification
+- Automated alerting
 
-- GDPR compliant data handling
-- Privacy controls for user profiles
-- Rate limiting to prevent abuse
-- Secure database connections
-- Input validation and sanitization
+## 🔒 Security Features
 
-## 🚀 Deployment
+- **Rate Limiting**: 20 requests per minute per user
+- **Input Validation**: Comprehensive input sanitization
+- **Privacy Controls**: Granular privacy settings
+- **Error Handling**: Secure error responses
+- **Admin Access Control**: Restricted admin commands
 
-### Docker Deployment
+## 🚀 Production Deployment
+
+### Automated Deployment
 ```bash
-# Build image
-docker build -t telegram-business-card-bot .
-
-# Run container
-docker run -d \
-  --name business-card-bot \
-  --env-file .env \
-  telegram-business-card-bot
+# Run deployment script
+npm run deploy
 ```
 
-### Cloud Deployment
-The bot is designed to be deployed on:
-- AWS (EC2, Lambda)
-- Google Cloud Platform
-- Azure
-- Heroku
-- Railway
+### Manual Deployment with PM2
+```bash
+# Build application
+npm run build
+
+# Start with PM2
+pm2 start ecosystem.config.js
+
+# Monitor
+pm2 monit
+```
+
+### Environment Variables (Production)
+```bash
+# Required
+TELEGRAM_BOT_TOKEN=your_bot_token
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=telegram_bot
+DB_USER=bot_user
+DB_PASSWORD=secure_password
+
+# Optional
+LOG_LEVEL=info
+NODE_ENV=production
+```
+
+## 📊 Performance
+
+### Optimizations
+- Connection pooling
+- Rate limiting
+- Efficient database queries
+- Memory management
+- Automated cleanup
+
+### Monitoring
+- Real-time health checks
+- Performance metrics
+- Error tracking
+- Resource usage monitoring
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🆘 Support
 
-- **Documentation**: Check the [ROADMAP.md](ROADMAP.md) for development progress
-- **Issues**: Report bugs and feature requests via GitHub Issues
-- **Discussions**: Join the community discussions
+- **Documentation**: Check the `/help` command in the bot
+- **Issues**: Report bugs via GitHub issues
+- **Feedback**: Use `/feedback` command in the bot
+- **Admin Support**: Contact administrators for urgent issues
 
-## 🗺️ Roadmap
+## 🔄 Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for detailed development phases and timeline.
+### Completed (Weeks 1-7)
+- ✅ Core bot functionality
+- ✅ Profile management
+- ✅ Search and discovery
+- ✅ Connection system
+- ✅ Privacy controls
+- ✅ Analytics tracking
 
-### Phase 1 (Weeks 1-4): Foundation & Core Infrastructure ✅
-- [x] Project setup and architecture
-- [x] Database design and models
-- [x] Basic profile management
-- [x] Connection management foundation
+### Completed (Weeks 8-9)
+- ✅ Admin commands
+- ✅ Health monitoring
+- ✅ Feedback system
+- ✅ Deployment automation
+- ✅ Docker support
+- ✅ Testing utilities
 
-### Phase 2 (Weeks 5-8): Search & Discovery 🔄
-- [ ] Search implementation
-- [ ] Profile discovery and viewing
-- [ ] Help system and navigation
-- [ ] Comprehensive testing
-
-### Phase 3 (Weeks 9-12): Advanced Features & Polish 📋
-- [ ] Performance optimization
-- [ ] Security and privacy implementation
-- [ ] Analytics and monitoring
-- [ ] Final testing and launch preparation
-
-### Phase 4 (Weeks 13-16): Post-Launch & Enhancement 📋
-- [ ] Launch execution and monitoring
-- [ ] User feedback implementation
-- [ ] Advanced features
-- [ ] Future planning
-
----
-
-**Built with ❤️ for the Telegram community** 
+### Future Enhancements
+- 🔄 Web dashboard
+- 🔄 Advanced analytics
+- 🔄 Integration APIs
+- 🔄 Mobile app
+- �� Premium features 
