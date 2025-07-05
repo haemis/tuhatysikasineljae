@@ -27,7 +27,14 @@
     "cache:clear": "node -e \"const { userCache, connectionCache, searchCache } = require('./dist/utils/cache'); userCache.clear(); connectionCache.clear(); searchCache.clear(); console.log('All caches cleared');\"",
     "test:advanced": "jest --testPathPattern=advanced",
     "test:performance": "jest --testPathPattern=performance",
-    "test:cache": "jest --testPathPattern=cache"
+    "test:cache": "jest --testPathPattern=cache",
+    "api:start": "ts-node src/api/index.ts",
+    "api:dev": "nodemon src/api/index.ts",
+    "security:check": "node -e \"require('./dist/utils/security').securityManager.getSecurityStats().then(console.log).catch(console.error)\"",
+    "compliance:report": "node -e \"require('./dist/utils/compliance').complianceManager.generateComplianceReport().then(console.log).catch(console.error)\"",
+    "mobile:setup": "cd mobile-app && npm install",
+    "mobile:android": "cd mobile-app && npm run android",
+    "mobile:ios": "cd mobile-app && npm run ios"
   },
   "keywords": [
     "telegram",

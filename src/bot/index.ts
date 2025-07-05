@@ -22,6 +22,7 @@ import { recommendationsCommand } from './commands/recommendations';
 import NotificationService from '../utils/notifications';
 import { userCache, connectionCache, searchCache } from '../utils/cache';
 import { performanceMonitor } from '../utils/performance';
+import { adminSecurityCommand, adminSecurityEventsCommand, adminBlockUserCommand, adminUnblockUserCommand, adminComplianceCommand, adminRetentionCommand, adminPrivacyRequestsCommand } from './commands/adminSecurity';
 
 // Validate configuration
 validateConfig();
@@ -136,6 +137,13 @@ bot.command('advancedsearch', advancedSearchCommand);
 bot.command('nextadvanced', nextAdvancedSearchPageCommand);
 bot.command('prevadvanced', prevAdvancedSearchPageCommand);
 bot.command('recommendations', recommendationsCommand);
+bot.command('adminsecurity', adminSecurityCommand);
+bot.command('adminsecurityevents', adminSecurityEventsCommand);
+bot.command('adminblockuser', adminBlockUserCommand);
+bot.command('adminunblockuser', adminUnblockUserCommand);
+bot.command('admincompliance', adminComplianceCommand);
+bot.command('adminretention', adminRetentionCommand);
+bot.command('adminprivacyrequests', adminPrivacyRequestsCommand);
 
 // Handle unknown commands
 bot.on('text', async (ctx) => {
