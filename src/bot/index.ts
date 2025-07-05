@@ -15,6 +15,8 @@ import { connectionsCommand } from './commands/connections';
 import { viewCommand } from './commands/view';
 import { settingsCommand, handleSettingsConversation } from './commands/settings';
 import rateLimiter from '../utils/rateLimiter';
+import { adminStatsCommand, adminUserCommand, adminMaintenanceCommand, adminRateLimitCommand } from './commands/admin';
+import { feedbackCommand, handleFeedbackConversation } from './commands/feedback';
 
 // Validate configuration
 validateConfig();
@@ -65,6 +67,10 @@ bot.use(async (ctx, next) => {
       // Handle settings conversation
       await handleSettingsConversation(ctx);
       return; // Don't continue to command handlers
+    } else if (conversation?.step === 'feedback_input') {
+      // Handle feedback conversation
+      await handleFeedbackConversation(ctx);
+      return; // Don't continue to command handlers
     } else if (conversation?.step.startsWith('name') || conversation?.step.startsWith('title') || 
                conversation?.step.startsWith('description') || conversation?.step.startsWith('github') ||
                conversation?.step.startsWith('linkedin') || conversation?.step.startsWith('website') ||
@@ -104,6 +110,11 @@ bot.command('decline', declineCommand);
 bot.command('connections', connectionsCommand);
 bot.command('view', viewCommand);
 bot.command('settings', settingsCommand);
+bot.command('adminstats', adminStatsCommand);
+bot.command('adminuser', adminUserCommand);
+bot.command('adminmaintenance', adminMaintenanceCommand);
+bot.command('adminratelimit', adminRateLimitCommand);
+bot.command('feedback', feedbackCommand);
 
 // Handle unknown commands
 bot.on('text', async (ctx) => {
