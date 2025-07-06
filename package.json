@@ -1,64 +1,33 @@
 {
-  "name": "telegram-business-card-bot",
+  "name": "worldid-telegram-bot-mvp",
   "version": "1.0.0",
-  "description": "A Telegram bot for creating digital business cards and managing professional networks",
-  "main": "dist/index.js",
+  "description": "A Telegram bot for creating business cards verified by World ID.",
+  "main": "dist/bot.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
-    "watch": "nodemon --exec ts-node src/index.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "migrate": "ts-node src/database/migrations/run-migrations.ts",
-    "seed": "ts-node src/database/seeds/run-seeds.ts"
+    "start": "node dist/bot.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/bot.ts"
   },
   "keywords": [
     "telegram",
     "bot",
-    "business-card",
-    "networking",
+    "worldcoin",
+    "world-id",
     "typescript"
   ],
-  "author": "Your Name",
-  "license": "MIT",
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "telegraf": "^4.15.6",
-    "pg": "^8.11.3",
+    "@types/express": "^5.0.3",
     "dotenv": "^16.3.1",
-    "joi": "^17.11.0",
-    "winston": "^3.11.0",
-    "helmet": "^7.1.0",
-    "express-rate-limit": "^7.1.5",
-    "cors": "^2.8.5",
-    "express": "^4.18.2",
-    "node-cron": "^3.0.3",
-    "axios": "^1.6.2",
-    "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "uuid": "^9.0.1"
+    "express": "^5.1.0",
+    "sqlite": "^5.0.1",
+    "sqlite3": "^5.1.6",
+    "telegraf": "^4.14.0"
   },
   "devDependencies": {
-    "@types/node": "^20.10.4",
-    "@types/pg": "^8.10.9",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.5",
-    "@types/uuid": "^9.0.7",
-    "@types/express": "^4.17.21",
-    "@types/cors": "^2.8.17",
-    "@types/jest": "^29.5.8",
-    "@typescript-eslint/eslint-plugin": "^6.13.2",
-    "@typescript-eslint/parser": "^6.13.2",
-    "eslint": "^8.55.0",
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.2",
-    "ts-jest": "^29.1.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+    "@types/node": "^20.8.9",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
   }
-} 
+}

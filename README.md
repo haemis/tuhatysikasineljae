@@ -1,293 +1,133 @@
-# Telegram Business Card Bot
+# Virtual Business Card Bot
 
-A professional networking bot for Telegram that allows users to create digital business cards, connect with other professionals, and manage their professional network directly within Telegram.
+A Telegram bot for creating and sharing professional business cards with optional World ID verification for enhanced trust.
 
-## 🚀 Features
+## Features
 
-### Core Features (Phase 1 - MVP)
-- ✅ **Profile Management**: Create and edit professional profiles
-- ✅ **Connection System**: Send and manage connection requests
-- ✅ **Search & Discovery**: Find other professionals
-- ✅ **Privacy Controls**: Manage profile visibility and settings
+- Create professional business cards with name, title, bio, and LinkedIn profile
+- Search for other users by name
+- View detailed business cards
+- Optional World ID verification for enhanced trust and authenticity
+- Works with or without World ID verification
 
-### Planned Features (Future Phases)
-- 🔍 **Advanced Search**: Filter by industry, location, skills
-- 📊 **Analytics**: Profile views, connection insights
-- 🔗 **Integrations**: LinkedIn, GitHub, calendar integration
-- 📱 **Mobile App**: Companion mobile application
+## Setup
 
-## 🛠️ Technology Stack
+1. Clone this repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-- **Backend**: TypeScript, Node.js
-- **Framework**: Telegraf (Telegram Bot API)
-- **Database**: PostgreSQL
-- **ORM**: Native PostgreSQL with connection pooling
-- **Logging**: Winston
-- **Validation**: Joi
-- **Hosting**: Cloud-based (AWS/GCP/Azure)
+3. Copy the environment file and configure it:
+   ```bash
+   cp .env.example .env
+   ```
 
-## 📋 Prerequisites
+4. Configure your environment variables in `.env`:
+   - `BOT_TOKEN`: Get this from @BotFather on Telegram (required)
+   - `BOT_USERNAME`: Your bot's username without the @ (required)
+   - `WORLD_ID_APP_ID`: Get from Worldcoin Developer Portal (optional)
+   - `API_BASE_URL`: Your API server URL (optional, defaults to localhost:3000)
+   - `PORT`: API server port (optional, defaults to 3000)
 
-- Node.js 18+ 
-- PostgreSQL 12+
-- Telegram Bot Token (from @BotFather)
+5. Build and start the bot:
+   ```bash
+   npm run build
+   npm start
+   ```
 
-## 🚀 Quick Start
+   Or for development:
+   ```bash
+   npm run dev
+   ```
 
-### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd telegram-business-card-bot
-```
+## World ID Integration (Optional)
 
-### 2. Install Dependencies
-```bash
-npm install
-```
+The bot supports optional World ID verification:
 
-### 3. Environment Setup
-```bash
-# Copy environment template
-cp env.example .env
+- **With World ID**: Users can verify their humanity for enhanced trust. Verified users get a ✅ badge on their profiles.
+- **Without World ID**: Users can still use all bot features without verification. Simply leave `WORLD_ID_APP_ID` empty or remove it from your `.env` file.
 
-# Edit .env with your configuration
-nano .env
-```
+To enable World ID verification:
+1. Create an app at [Worldcoin Developer Portal](https://developer.worldcoin.org)
+2. Set your `WORLD_ID_APP_ID` in the `.env` file
+3. Configure your redirect URI to `{YOUR_API_BASE_URL}/auth/worldid/callback`
 
-Required environment variables:
-```env
-# Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-TELEGRAM_BOT_USERNAME=your_bot_username
+## Bot Commands
 
-# Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/business_card_bot
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_NAME=business_card_bot
-DATABASE_USER=username
-DATABASE_PASSWORD=password
+- `/start` - Start the bot and get welcome message
+- `/help` - Show help message with all available commands
+- `/createcard` - Create your business card
+- `/editcard` - Edit individual fields of your existing business card
+- `/mycard` - View your current business card
+- `/search <name>` - Search for users by name
+- `/view @username` - View a specific user's business card
+- `/connect @username` - Send connection request to another user
+- `/requests` - View and respond to pending connection requests
+- `/connections` - View your network of connected users
+- `/verify` - Verify with World ID (if configured)
+- `/deletecard` - Delete your business card and data
 
-# Application Configuration
-NODE_ENV=development
-PORT=3000
-LOG_LEVEL=info
-```
+## Networking Features
 
-### 4. Database Setup
-```bash
-# Create database
-createdb business_card_bot
+The bot includes a comprehensive networking system that allows users to connect with each other:
 
-# Run migrations
-npm run migrate
-```
+### Connection Workflow
+1. **Discovery**: Use `/search <name>` to find users by name
+2. **View Profiles**: Use `/view @username` to see detailed business cards
+3. **Connect**: Click the "🤝 Connect" button or use `/connect @username` to send connection requests
+4. **Manage Requests**: Recipients use `/requests` to view and respond to pending requests
+5. **Network**: Use `/connections` to view your professional network
 
-### 5. Start the Bot
-```bash
-# Development mode
-npm run dev
+### Connection Features
+- **Real-time Notifications**: Users receive instant notifications when they receive connection requests
+- **Status Indicators**: Clear visual indicators show connection status (pending, connected)
+- **Interactive Buttons**: Easy-to-use inline buttons for connecting and managing requests
+- **Network Overview**: View all your connections in one place
 
-# Production mode
-npm run build
-npm start
-```
+## Database Schema
 
-## 📁 Project Structure
+The bot uses SQLite with the following schema:
 
-```
-src/
-├── bot/                    # Telegram bot logic
-│   ├── commands/          # Bot command handlers
-│   │   ├── start.ts       # Welcome command
-│   │   ├── help.ts        # Help command
-│   │   ├── profile.ts     # Profile management
-│   │   ├── search.ts      # User search
-│   │   ├── connect.ts     # Connection requests
-│   │   └── ...           # Other commands
-│   └── index.ts           # Bot setup and configuration
-├── database/              # Database layer
-│   ├── connection.ts      # Database connection
-│   ├── migrations/        # Database migrations
-│   └── seeds/            # Database seeds
-├── models/               # Data models
-│   ├── UserModel.ts      # User profile operations
-│   └── ConnectionModel.ts # Connection operations
-├── types/                # TypeScript type definitions
-│   └── index.ts
-├── utils/                # Utility functions
-│   └── logger.ts         # Logging configuration
-├── config/               # Configuration management
-│   └── index.ts
-└── index.ts              # Application entry point
-```
-
-## 🤖 Bot Commands
-
-### Profile Management
-- `/start` - Welcome message and bot introduction
-- `/help` - Show all available commands
-- `/profile` - Create or edit your professional profile
-- `/myprofile` - View your own profile
-- `/settings` - Manage privacy settings
-
-### Networking
-- `/search [query]` - Search for professionals
-- `/connect @username` - Send connection request
-- `/requests` - View pending connection requests
-- `/accept @username` - Accept connection request
-- `/decline @username` - Decline connection request
-- `/connections` - View your connections
-- `/view @username` - View someone's profile
-
-## 🗄️ Database Schema
-
-### Users Table
 ```sql
-CREATE TABLE users (
-    telegram_id BIGINT PRIMARY KEY,
-    username VARCHAR(255),
-    name VARCHAR(50) NOT NULL,
-    title VARCHAR(100) NOT NULL,
-    description TEXT NOT NULL,
-    github_username VARCHAR(39),
-    linkedin_url TEXT,
-    website_url TEXT,
-    world_id VARCHAR(255),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    privacy_settings JSONB
+CREATE TABLE BusinessCards (
+  telegram_id INTEGER PRIMARY KEY,
+  world_id_hash TEXT UNIQUE,
+  telegram_username TEXT NOT NULL,
+  name TEXT NOT NULL,
+  title TEXT NOT NULL,
+  bio TEXT NOT NULL,
+  linkedin_url TEXT,
+  is_verified BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE Connections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  requester_id INTEGER NOT NULL,
+  recipient_id INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (requester_id) REFERENCES BusinessCards (telegram_id),
+  FOREIGN KEY (recipient_id) REFERENCES BusinessCards (telegram_id),
+  UNIQUE(requester_id, recipient_id)
 );
 ```
 
-### Connections Table
-```sql
-CREATE TABLE connections (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_id BIGINT NOT NULL REFERENCES users(telegram_id),
-    receiver_id BIGINT NOT NULL REFERENCES users(telegram_id),
-    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(requester_id, receiver_id)
-);
-```
+## API Endpoints
 
-## 🧪 Development
+- `GET /health` - Health check endpoint
+- `GET /auth/worldid/callback` - World ID OAuth callback (if World ID is configured)
 
-### Available Scripts
-```bash
-# Development
-npm run dev          # Start in development mode
-npm run watch        # Start with auto-reload
+## Development
 
-# Building
-npm run build        # Build for production
-npm start           # Start production server
+The project is built with:
+- TypeScript
+- Telegraf (Telegram Bot Framework)
+- SQLite database
+- Express.js for API endpoints
+- World ID for optional verification
 
-# Database
-npm run migrate      # Run database migrations
-npm run seed         # Seed database with test data
+## License
 
-# Testing
-npm test            # Run tests
-npm run test:watch  # Run tests in watch mode
-
-# Linting
-npm run lint        # Check code style
-npm run lint:fix    # Fix code style issues
-```
-
-### Code Style
-- TypeScript strict mode enabled
-- ESLint configuration included
-- Prettier formatting (recommended)
-
-## 📊 Monitoring & Analytics
-
-The bot includes built-in monitoring:
-- Request/response logging
-- Error tracking
-- Performance metrics
-- User analytics
-
-## 🔒 Security & Privacy
-
-- GDPR compliant data handling
-- Privacy controls for user profiles
-- Rate limiting to prevent abuse
-- Secure database connections
-- Input validation and sanitization
-
-## 🚀 Deployment
-
-### Docker Deployment
-```bash
-# Build image
-docker build -t telegram-business-card-bot .
-
-# Run container
-docker run -d \
-  --name business-card-bot \
-  --env-file .env \
-  telegram-business-card-bot
-```
-
-### Cloud Deployment
-The bot is designed to be deployed on:
-- AWS (EC2, Lambda)
-- Google Cloud Platform
-- Azure
-- Heroku
-- Railway
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-- **Documentation**: Check the [ROADMAP.md](ROADMAP.md) for development progress
-- **Issues**: Report bugs and feature requests via GitHub Issues
-- **Discussions**: Join the community discussions
-
-## 🗺️ Roadmap
-
-See [ROADMAP.md](ROADMAP.md) for detailed development phases and timeline.
-
-### Phase 1 (Weeks 1-4): Foundation & Core Infrastructure ✅
-- [x] Project setup and architecture
-- [x] Database design and models
-- [x] Basic profile management
-- [x] Connection management foundation
-
-### Phase 2 (Weeks 5-8): Search & Discovery 🔄
-- [ ] Search implementation
-- [ ] Profile discovery and viewing
-- [ ] Help system and navigation
-- [ ] Comprehensive testing
-
-### Phase 3 (Weeks 9-12): Advanced Features & Polish 📋
-- [ ] Performance optimization
-- [ ] Security and privacy implementation
-- [ ] Analytics and monitoring
-- [ ] Final testing and launch preparation
-
-### Phase 4 (Weeks 13-16): Post-Launch & Enhancement 📋
-- [ ] Launch execution and monitoring
-- [ ] User feedback implementation
-- [ ] Advanced features
-- [ ] Future planning
-
----
-
-**Built with ❤️ for the Telegram community** 
+ISC
