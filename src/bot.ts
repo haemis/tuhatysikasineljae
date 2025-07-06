@@ -63,17 +63,21 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
+const escapeMarkdown = (text: string): string => {
+  return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+};
+
 const formatCard = (card: BusinessCard): string => {
-  let message = `👤 *${card.name}*`;
+  let message = `👤 *${escapeMarkdown(card.name)}*`;
   if (card.is_verified) {
     message += ` ✅`;
   }
-  message += `\n*Title:* ${card.title}\n\n`;
-  message += `*Bio:* ${card.bio}\n\n`;
+  message += `\n*Title:* ${escapeMarkdown(card.title)}\n\n`;
+  message += `*Bio:* ${escapeMarkdown(card.bio)}\n\n`;
   if (card.linkedin_url) {
     message += `[LinkedIn Profile](${card.linkedin_url})\n`;
   }
-  message += `*Telegram:* @${card.telegram_username}`;
+  message += `*Telegram:* @${escapeMarkdown(card.telegram_username)}`;
   if (card.is_verified) {
     message += `\n\n✅ *Verified Human*`;
   }
@@ -178,7 +182,7 @@ bot.command("search", async (ctx) => {
   if (results.length === 0)
     return ctx.reply(`No users found with the name "${query}".`);
   const response = results
-    .map((r: BusinessCard) => `👤 *${r.name}*${r.is_verified ? ' ✅' : ''} (@${r.telegram_username}) - ${r.title}`)
+    .map((r: BusinessCard) => `👤 *${escapeMarkdown(r.name)}*${r.is_verified ? ' ✅' : ''} (@${escapeMarkdown(r.telegram_username)}) - ${escapeMarkdown(r.title)}`)
     .join("\n");
   await ctx.replyWithMarkdown(
     "Found users:\n\n" +
