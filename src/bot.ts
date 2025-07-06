@@ -245,6 +245,39 @@ bot.action("continue", async (ctx) => {
   );
 });
 
+bot.command("help", async (ctx) => {
+  const helpMessage = `
+🤖 *Virtual Business Card Bot Help*
+
+*Available Commands:*
+
+📝 *Card Management:*
+• \`/createcard\` - Create your business card
+• \`/editcard\` - Edit individual fields of your card
+• \`/mycard\` - View your current business card
+• \`/deletecard\` - Delete your card and data
+
+🔍 *Discovery:*
+• \`/search <name>\` - Search for users by name
+• \`/view @username\` - View someone's business card
+
+${WORLD_ID_APP_ID ? '🔐 *Verification:*\n• `/verify` - Verify with World ID for enhanced trust\n' : ''}
+ℹ️ *Other:*
+• \`/help\` - Show this help message
+• \`/start\` - Start/restart the bot
+
+*About Verification:*
+${WORLD_ID_APP_ID ?
+  '✅ Users with World ID verification get a verified badge for enhanced trust.' :
+  'World ID verification is not configured on this bot instance.'
+}
+
+*Need help?* Just type any command to get started!
+  `;
+  
+  await ctx.replyWithMarkdown(helpMessage);
+});
+
 bot.command("createcard", (ctx) => ctx.scene.enter("create-card-wizard"));
 
 bot.command("editcard", (ctx) => ctx.scene.enter("edit-card-wizard"));
