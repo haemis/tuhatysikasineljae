@@ -61,6 +61,21 @@ async function initDb(): Promise<void> {
     console.log("Database migration completed.");
   }
 
+  // Always ensure Connections table exists
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS Connections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      requester_id INTEGER NOT NULL,
+      recipient_id INTEGER NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'declined')),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (requester_id) REFERENCES BusinessCards (telegram_id),
+      FOREIGN KEY (recipient_id) REFERENCES BusinessCards (telegram_id),
+      UNIQUE(requester_id, recipient_id)
+    );
+  `);
+
   console.log("Database initialized.");
 }
 
@@ -174,6 +189,73 @@ async function deleteUser(telegram_id: number): Promise<void> {
   await db.run("DELETE FROM BusinessCards WHERE telegram_id = ?", telegram_id);
 }
 
+async function sendConnectionRequest(
+  requester_id: number,
+  recipient_id: number,
+): Promise<void> {
+  await db.run(
+    "INSERT OR REPLACE INTO Connections (requester_id, recipient_id, status, updated_at) VALUES (?, ?, 'pending', CURRENT_TIMESTAMP)",
+    requester_id,
+    recipient_id,
+  );
+}
+
+async function respondToConnectionRequest(
+  requester_id: number,
+  recipient_id: number,
+  status: 'accepted' | 'declined',
+): Promise<void> {
+  await db.run(
+    "UPDATE Connections SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE requester_id = ? AND recipient_id = ?",
+    status,
+    requester_id,
+    recipient_id,
+  );
+}
+
+async function getConnectionStatus(
+  user1_id: number,
+  user2_id: number,
+): Promise<string | null> {
+  const result = await db.get(
+    "SELECT status FROM Connections WHERE (requester_id = ? AND recipient_id = ?) OR (requester_id = ? AND recipient_id = ?)",
+    user1_id,
+    user2_id,
+    user2_id,
+    user1_id,
+  );
+  return result?.status || null;
+}
+
+async function getPendingConnectionRequests(user_id: number): Promise<any[]> {
+  return db.all(
+    `SELECT c.*, bc.name, bc.telegram_username, bc.title, bc.is_verified
+     FROM Connections c
+     JOIN BusinessCards bc ON c.requester_id = bc.telegram_id
+     WHERE c.recipient_id = ? AND c.status = 'pending'
+     ORDER BY c.created_at DESC`,
+    user_id,
+  );
+}
+
+async function getConnections(user_id: number): Promise<any[]> {
+  return db.all(
+    `SELECT bc.telegram_id, bc.name, bc.telegram_username, bc.title, bc.is_verified, c.created_at
+     FROM Connections c
+     JOIN BusinessCards bc ON (
+       CASE
+         WHEN c.requester_id = ? THEN c.recipient_id = bc.telegram_id
+         ELSE c.requester_id = bc.telegram_id
+       END
+     )
+     WHERE (c.requester_id = ? OR c.recipient_id = ?) AND c.status = 'accepted'
+     ORDER BY c.updated_at DESC`,
+    user_id,
+    user_id,
+    user_id,
+  );
+}
+
 module.exports = {
   initDb,
   findUserByTelegramId,
@@ -183,4 +265,9 @@ module.exports = {
   createUnverifiedUser,
   updateUserCard,
   deleteUser,
+  sendConnectionRequest,
+  respondToConnectionRequest,
+  getConnectionStatus,
+  getPendingConnectionRequests,
+  getConnections,
 };

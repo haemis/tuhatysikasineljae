@@ -245,6 +245,75 @@ bot.action("continue", async (ctx) => {
   );
 });
 
+// Connection request handlers
+bot.action(/^connect_(\d+)$/, async (ctx) => {
+  const recipientId = parseInt(ctx.match![1]);
+  await ctx.answerCbQuery();
+  
+  const recipient = await db.findUserByTelegramId(recipientId);
+  if (!recipient) {
+    return ctx.reply("User not found.");
+  }
+  
+  const connectionStatus = await db.getConnectionStatus(ctx.from!.id, recipientId);
+  if (connectionStatus === 'accepted') {
+    return ctx.reply("You are already connected with this user!");
+  } else if (connectionStatus === 'pending') {
+    return ctx.reply("Connection request already sent!");
+  }
+  
+  await db.sendConnectionRequest(ctx.from!.id, recipientId);
+  await ctx.reply(`Connection request sent to ${recipient.name}!`);
+  
+  // Notify the recipient
+  try {
+    const requester = await db.findUserByTelegramId(ctx.from!.id);
+    await ctx.telegram.sendMessage(
+      recipientId,
+      `🤝 New connection request from *${escapeMarkdown(requester!.name)}* (@${escapeMarkdown(requester!.telegram_username)})\n\nUse /requests to view and respond to connection requests.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    // User might have blocked the bot, ignore
+  }
+});
+
+bot.action(/^accept_(\d+)$/, async (ctx) => {
+  const requesterId = parseInt(ctx.match![1]);
+  await ctx.answerCbQuery();
+  
+  await db.respondToConnectionRequest(requesterId, ctx.from!.id, 'accepted');
+  
+  const requester = await db.findUserByTelegramId(requesterId);
+  await ctx.reply(`✅ You are now connected with ${requester?.name}!`);
+  
+  // Notify the requester
+  try {
+    const recipient = await db.findUserByTelegramId(ctx.from!.id);
+    await ctx.telegram.sendMessage(
+      requesterId,
+      `✅ *${escapeMarkdown(recipient!.name)}* accepted your connection request!\n\nYou can now view their full profile and they're in your connections.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    // User might have blocked the bot, ignore
+  }
+});
+
+bot.action(/^decline_(\d+)$/, async (ctx) => {
+  const requesterId = parseInt(ctx.match![1]);
+  await ctx.answerCbQuery();
+  
+  await db.respondToConnectionRequest(requesterId, ctx.from!.id, 'declined');
+  
+  const requester = await db.findUserByTelegramId(requesterId);
+  await ctx.reply(`❌ Connection request from ${requester?.name} declined.`);
+});
+
+bot.action("noop", async (ctx) => {
+  await ctx.answerCbQuery();
+});
+
 bot.command("help", async (ctx) => {
   const helpMessage = `
 🤖 *Virtual Business Card Bot Help*
@@ -261,6 +330,11 @@ bot.command("help", async (ctx) => {
 • \`/search <name>\` - Search for users by name
 • \`/view @username\` - View someone's business card
 
+🤝 *Networking:*
+• \`/connect @username\` - Send connection request
+• \`/requests\` - View pending connection requests
+• \`/connections\` - View your network connections
+
 ${WORLD_ID_APP_ID ? '🔐 *Verification:*\n• `/verify` - Verify with World ID for enhanced trust\n' : ''}
 ℹ️ *Other:*
 • \`/help\` - Show this help message
@@ -271,6 +345,9 @@ ${WORLD_ID_APP_ID ?
   '✅ Users with World ID verification get a verified badge for enhanced trust.' :
   'World ID verification is not configured on this bot instance.'
 }
+
+*About Connections:*
+Connect with other users to build your professional network. Connected users can easily find and contact each other.
 
 *Need help?* Just type any command to get started!
   `;
@@ -312,10 +389,105 @@ bot.command("view", async (ctx) => {
   if (!username) return ctx.reply("Usage: /view @username");
   const user = await db.findUserByUsername(username);
   if (user) {
-    await ctx.replyWithMarkdown(formatCard(user));
+    const connectionStatus = await db.getConnectionStatus(ctx.from!.id, user.telegram_id);
+    let buttons = [];
+    
+    if (user.telegram_id !== ctx.from!.id) {
+      if (!connectionStatus) {
+        buttons.push([{ text: "🤝 Connect", callback_data: `connect_${user.telegram_id}` }]);
+      } else if (connectionStatus === 'pending') {
+        buttons.push([{ text: "⏳ Request Pending", callback_data: "noop" }]);
+      } else if (connectionStatus === 'accepted') {
+        buttons.push([{ text: "✅ Connected", callback_data: "noop" }]);
+      }
+    }
+    
+    await ctx.replyWithMarkdown(formatCard(user), {
+      reply_markup: buttons.length > 0 ? { inline_keyboard: buttons } : undefined,
+    });
   } else {
     return ctx.reply(`User ${username} not found or has no card.`);
   }
+});
+
+bot.command("connect", async (ctx) => {
+  const username = ctx.message.text.split(" ")[1];
+  if (!username) return ctx.reply("Usage: /connect @username");
+  
+  const user = await db.findUserByUsername(username);
+  if (!user) {
+    return ctx.reply(`User ${username} not found.`);
+  }
+  
+  if (user.telegram_id === ctx.from!.id) {
+    return ctx.reply("You can't connect with yourself!");
+  }
+  
+  const connectionStatus = await db.getConnectionStatus(ctx.from!.id, user.telegram_id);
+  if (connectionStatus === 'accepted') {
+    return ctx.reply("You are already connected with this user!");
+  } else if (connectionStatus === 'pending') {
+    return ctx.reply("Connection request already sent!");
+  }
+  
+  await db.sendConnectionRequest(ctx.from!.id, user.telegram_id);
+  await ctx.reply(`Connection request sent to ${user.name}!`);
+  
+  // Notify the recipient
+  try {
+    const requester = await db.findUserByTelegramId(ctx.from!.id);
+    await ctx.telegram.sendMessage(
+      user.telegram_id,
+      `🤝 New connection request from *${escapeMarkdown(requester!.name)}* (@${escapeMarkdown(requester!.telegram_username)})\n\nUse /requests to view and respond to connection requests.`,
+      { parse_mode: 'Markdown' }
+    );
+  } catch (error) {
+    // User might have blocked the bot, ignore
+  }
+});
+
+bot.command("requests", async (ctx) => {
+  const requests = await db.getPendingConnectionRequests(ctx.from!.id);
+  
+  if (requests.length === 0) {
+    return ctx.reply("You have no pending connection requests.");
+  }
+  
+  let message = "🤝 *Pending Connection Requests:*\n\n";
+  const buttons = [];
+  
+  for (const request of requests) {
+    message += `👤 *${escapeMarkdown(request.name)}*${request.is_verified ? ' ✅' : ''} (@${escapeMarkdown(request.telegram_username)})\n`;
+    message += `*Title:* ${escapeMarkdown(request.title)}\n\n`;
+    
+    buttons.push([
+      { text: `✅ Accept ${request.name}`, callback_data: `accept_${request.requester_id}` },
+      { text: `❌ Decline ${request.name}`, callback_data: `decline_${request.requester_id}` },
+    ]);
+  }
+  
+  await ctx.replyWithMarkdown(message, {
+    reply_markup: { inline_keyboard: buttons },
+  });
+});
+
+bot.command("connections", async (ctx) => {
+  const connections = await db.getConnections(ctx.from!.id);
+  
+  if (connections.length === 0) {
+    return ctx.reply("You don't have any connections yet. Use /search to find people and /connect to connect with them!");
+  }
+  
+  let message = `🌐 *Your Connections (${connections.length}):*\n\n`;
+  
+  for (const connection of connections) {
+    message += `👤 *${escapeMarkdown(connection.name)}*${connection.is_verified ? ' ✅' : ''} (@${escapeMarkdown(connection.telegram_username)})\n`;
+    message += `*Title:* ${escapeMarkdown(connection.title)}\n\n`;
+  }
+  
+  message += "\nUse `/view @username` to see full profiles.";
+  
+  await ctx.replyWithMarkdown(message);
 });
 
 bot.command("deletecard", async (ctx) => {
