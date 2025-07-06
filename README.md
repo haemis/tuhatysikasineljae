@@ -56,7 +56,8 @@ To enable World ID verification:
 ## Bot Commands
 
 - `/start` - Start the bot and get welcome message
-- `/createcard` - Create or update your business card
+- `/createcard` - Create your business card
+- `/editcard` - Edit individual fields of your existing business card
 - `/mycard` - View your current business card
 - `/search <name>` - Search for users by name
 - `/view @username` - View a specific user's business card
