@@ -10,6 +10,7 @@ async function initDb(): Promise<void> {
     driver: sqlite3.Database,
   });
 
+  // Create table with old schema first if it doesn't exist
   await db.exec(`
     CREATE TABLE IF NOT EXISTS BusinessCards (
       world_id_hash TEXT PRIMARY KEY,
@@ -21,6 +22,45 @@ async function initDb(): Promise<void> {
       linkedin_url TEXT
     );
   `);
+
+  // Check if we need to migrate the schema
+  const tableInfo = await db.all("PRAGMA table_info(BusinessCards)");
+  const hasIsVerified = tableInfo.some((col: any) => col.name === 'is_verified');
+  const hasTelegramIdAsPrimary = tableInfo.some((col: any) => col.name === 'telegram_id' && col.pk === 1);
+
+  if (!hasIsVerified || !hasTelegramIdAsPrimary) {
+    console.log("Migrating database schema...");
+    
+    // Create new table with updated schema
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS BusinessCards_new (
+        telegram_id INTEGER PRIMARY KEY,
+        world_id_hash TEXT UNIQUE,
+        telegram_username TEXT NOT NULL,
+        name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        bio TEXT NOT NULL,
+        linkedin_url TEXT,
+        is_verified BOOLEAN DEFAULT FALSE
+      );
+    `);
+
+    // Migrate existing data
+    await db.exec(`
+      INSERT OR IGNORE INTO BusinessCards_new
+      (telegram_id, world_id_hash, telegram_username, name, title, bio, linkedin_url, is_verified)
+      SELECT telegram_id, world_id_hash, telegram_username, name, title, bio, linkedin_url,
+             CASE WHEN world_id_hash IS NOT NULL AND world_id_hash != '' THEN 1 ELSE 0 END
+      FROM BusinessCards;
+    `);
+
+    // Replace old table with new one
+    await db.exec(`DROP TABLE BusinessCards;`);
+    await db.exec(`ALTER TABLE BusinessCards_new RENAME TO BusinessCards;`);
+    
+    console.log("Database migration completed.");
+  }
+
   console.log("Database initialized.");
 }
 
@@ -63,13 +103,34 @@ async function createVerifiedUser(
     bio: "No bio yet. Use /createcard to set up your profile!",
   };
   await db.run(
-    "INSERT OR IGNORE INTO BusinessCards (world_id_hash, telegram_id, telegram_username, name, title, bio) VALUES (?, ?, ?, ?, ?, ?)",
+    "INSERT OR REPLACE INTO BusinessCards (telegram_id, world_id_hash, telegram_username, name, title, bio, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    telegram_id,
     world_id_hash,
+    telegram_username,
+    placeholder.name,
+    placeholder.title,
+    placeholder.bio,
+    true,
+  );
+}
+
+async function createUnverifiedUser(
+  telegram_id: number,
+  telegram_username: string,
+): Promise<void> {
+  const placeholder = {
+    name: "Unnamed",
+    title: "Untitled",
+    bio: "No bio yet. Use /createcard to set up your profile!",
+  };
+  await db.run(
+    "INSERT OR IGNORE INTO BusinessCards (telegram_id, telegram_username, name, title, bio, is_verified) VALUES (?, ?, ?, ?, ?, ?)",
     telegram_id,
     telegram_username,
     placeholder.name,
     placeholder.title,
     placeholder.bio,
+    false,
   );
 }
 
@@ -97,6 +158,7 @@ module.exports = {
   findUserByUsername,
   searchUsersByName,
   createVerifiedUser,
+  createUnverifiedUser,
   updateUserCard,
   deleteUser,
 };

@@ -10,8 +10,8 @@ import { BusinessCard } from "./types";
 dotenv.config();
 
 const { BOT_TOKEN, WORLD_ID_APP_ID, BOT_USERNAME, API_BASE_URL } = process.env;
-if (!BOT_TOKEN || !WORLD_ID_APP_ID || !BOT_USERNAME) {
-  throw new Error("Missing environment variables!");
+if (!BOT_TOKEN || !BOT_USERNAME) {
+  throw new Error("Missing required environment variables: BOT_TOKEN, BOT_USERNAME");
 }
 
 const REDIRECT_URI = API_BASE_URL ? `${API_BASE_URL}/auth/worldid/callback` : `http://localhost:3000/auth/worldid/callback`;
@@ -52,28 +52,31 @@ bot.use(session());
 bot.use(stage.middleware());
 
 bot.use(async (ctx, next) => {
-  const allowedCommands = ["/start", "/verify"];
-  const messageText = (ctx.message as any)?.text || "";
-  if (allowedCommands.includes(messageText.split(" ")[0])) {
-    return next();
-  }
+  // Create unverified user if they don't exist
   const user = await db.findUserByTelegramId(ctx.from!.id);
   if (!user) {
-    return ctx.reply(
-      "You must be a verified human to use this bot. Please use /verify first.",
+    await db.createUnverifiedUser(
+      ctx.from!.id,
+      ctx.from!.username || `user${ctx.from!.id}`
     );
   }
   return next();
 });
 
 const formatCard = (card: BusinessCard): string => {
-  let message = `👤 *${card.name}*\n`;
-  message += `*Title:* ${card.title}\n\n`;
+  let message = `👤 *${card.name}*`;
+  if (card.is_verified) {
+    message += ` ✅`;
+  }
+  message += `\n*Title:* ${card.title}\n\n`;
   message += `*Bio:* ${card.bio}\n\n`;
   if (card.linkedin_url) {
     message += `[LinkedIn Profile](${card.linkedin_url})\n`;
   }
   message += `*Telegram:* @${card.telegram_username}`;
+  if (card.is_verified) {
+    message += `\n\n✅ *Verified Human*`;
+  }
   return message;
 };
 
@@ -92,17 +95,24 @@ bot.start(async (ctx) => {
   } else {
     const user = await db.findUserByTelegramId(ctx.from!.id);
     if (user) {
-      await ctx.reply(
-        "Welcome back! You are already verified. Use /mycard to see your card or /search to find others.",
-      );
+      const welcomeMessage = user.is_verified
+        ? "Welcome back! You are verified. Use /mycard to see your card or /search to find others."
+        : "Welcome back! Use /mycard to see your card or /search to find others.";
+      await ctx.reply(welcomeMessage);
     } else {
+      const buttons = [];
+      if (WORLD_ID_APP_ID) {
+        buttons.push([{ text: "Verify with World ID", callback_data: "verify" }]);
+      }
+      buttons.push([{ text: "Continue without verification", callback_data: "continue" }]);
+      
       await ctx.reply(
-        "Welcome to the Virtual Business Card Bot! To get started, you must prove you are a unique human with World ID.",
+        "Welcome to the Virtual Business Card Bot!\n\n" +
+        "You can use this bot to create and share professional business cards. " +
+        (WORLD_ID_APP_ID ? "For enhanced trust, you can verify your humanity with World ID." : ""),
         {
           reply_markup: {
-            inline_keyboard: [
-              [{ text: "Verify with World ID", callback_data: "verify" }],
-            ],
+            inline_keyboard: buttons,
           },
         },
       );
@@ -111,14 +121,18 @@ bot.start(async (ctx) => {
 });
 
 const sendVerificationLink = (ctx: Context) => {
+  if (!WORLD_ID_APP_ID) {
+    return ctx.reply("World ID verification is not configured on this bot.");
+  }
+  
   const params = new URLSearchParams({
-    app_id: WORLD_ID_APP_ID!,
+    app_id: WORLD_ID_APP_ID,
     action_id: "my-action",
     signal: ctx.from!.id.toString(),
     redirect_uri: REDIRECT_URI,
     response_type: "code",
     scope: "openid",
-    client_id: WORLD_ID_APP_ID!,
+    client_id: WORLD_ID_APP_ID,
     state: ctx.from!.id.toString(),
   });
   const verificationUrl = `https://id.worldcoin.org/authorize?${params.toString()}`;
@@ -136,6 +150,14 @@ bot.command("verify", sendVerificationLink);
 bot.action("verify", (ctx) => {
   ctx.answerCbQuery();
   sendVerificationLink(ctx);
+});
+
+bot.action("continue", async (ctx) => {
+  ctx.answerCbQuery();
+  await ctx.reply(
+    "Great! You can now use the bot. Use /createcard to set up your professional profile.\n\n" +
+    "Note: You can verify with World ID later using /verify for enhanced trust."
+  );
 });
 
 bot.command("createcard", (ctx) => ctx.scene.enter("create-card-wizard"));
@@ -156,7 +178,7 @@ bot.command("search", async (ctx) => {
   if (results.length === 0)
     return ctx.reply(`No users found with the name "${query}".`);
   const response = results
-    .map((r: BusinessCard) => `👤 *${r.name}* (@${r.telegram_username}) - ${r.title}`)
+    .map((r: BusinessCard) => `👤 *${r.name}*${r.is_verified ? ' ✅' : ''} (@${r.telegram_username}) - ${r.title}`)
     .join("\n");
   await ctx.replyWithMarkdown(
     "Found users:\n\n" +
