@@ -19,18 +19,22 @@ const REDIRECT_URI = API_BASE_URL ? `${API_BASE_URL}/auth/worldid/callback` : `h
 const createCardScene = new Scenes.WizardScene<any>(
   "create-card-wizard",
   async (ctx) => {
+    await ctx.reply("Let's create your business card! What's your full name?");
     return ctx.wizard.next();
   },
   async (ctx) => {
     ctx.wizard.state.name = ctx.message.text;
+    await ctx.reply("What's your professional title or job position?");
     return ctx.wizard.next();
   },
   async (ctx) => {
     ctx.wizard.state.title = ctx.message.text;
+    await ctx.reply("Tell us about yourself! Write a short bio (max 200 characters):");
     return ctx.wizard.next();
   },
   async (ctx) => {
     ctx.wizard.state.bio = ctx.message.text.substring(0, 200);
+    await ctx.reply("What's your LinkedIn profile URL? (Type 'skip' if you don't have one)");
     return ctx.wizard.next();
   },
   async (ctx) => {
@@ -45,8 +49,85 @@ const createCardScene = new Scenes.WizardScene<any>(
   },
 );
 
+const editCardScene = new Scenes.WizardScene<any>(
+  "edit-card-wizard",
+  async (ctx) => {
+    const user = await db.findUserByTelegramId(ctx.from!.id);
+    if (!user) {
+      await ctx.reply("You don't have a card yet! Use /createcard to make one.");
+      return await ctx.scene.leave();
+    }
+    
+    ctx.wizard.state.currentCard = user;
+    await ctx.reply(
+      "What would you like to edit?",
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: "Name", callback_data: "edit_name" }],
+            [{ text: "Title", callback_data: "edit_title" }],
+            [{ text: "Bio", callback_data: "edit_bio" }],
+            [{ text: "LinkedIn URL", callback_data: "edit_linkedin" }],
+            [{ text: "Cancel", callback_data: "edit_cancel" }],
+          ],
+        },
+      },
+    );
+    return ctx.wizard.next();
+  },
+  async (ctx) => {
+    if (ctx.callbackQuery) {
+      const action = (ctx.callbackQuery as any).data;
+      await ctx.answerCbQuery();
+      
+      switch (action) {
+        case "edit_name":
+          ctx.wizard.state.editField = "name";
+          await ctx.reply(`Current name: ${ctx.wizard.state.currentCard.name}\n\nEnter your new name:`);
+          return ctx.wizard.next();
+        case "edit_title":
+          ctx.wizard.state.editField = "title";
+          await ctx.reply(`Current title: ${ctx.wizard.state.currentCard.title}\n\nEnter your new title:`);
+          return ctx.wizard.next();
+        case "edit_bio":
+          ctx.wizard.state.editField = "bio";
+          await ctx.reply(`Current bio: ${ctx.wizard.state.currentCard.bio}\n\nEnter your new bio (max 200 characters):`);
+          return ctx.wizard.next();
+        case "edit_linkedin":
+          ctx.wizard.state.editField = "linkedin_url";
+          const currentLinkedIn = ctx.wizard.state.currentCard.linkedin_url || "Not set";
+          await ctx.reply(`Current LinkedIn: ${currentLinkedIn}\n\nEnter your new LinkedIn URL (or 'skip' to remove):`);
+          return ctx.wizard.next();
+        case "edit_cancel":
+          await ctx.reply("Edit cancelled.");
+          return await ctx.scene.leave();
+        default:
+          await ctx.reply("Invalid option. Please try again.");
+          return;
+      }
+    }
+    return;
+  },
+  async (ctx) => {
+    const field = ctx.wizard.state.editField;
+    let newValue = ctx.message.text;
+    
+    if (field === "bio") {
+      newValue = newValue.substring(0, 200);
+    } else if (field === "linkedin_url" && newValue.toLowerCase() === "skip") {
+      newValue = undefined;
+    }
+    
+    const updates = { [field]: newValue };
+    await db.updateUserCard(ctx.from.id, updates);
+    
+    await ctx.reply(`Your ${field.replace('_', ' ')} has been updated!`);
+    return await ctx.scene.leave();
+  },
+);
+
 const bot = new Telegraf<Scenes.WizardContext>(BOT_TOKEN);
-const stage = new Scenes.Stage<Scenes.WizardContext>([createCardScene]);
+const stage = new Scenes.Stage<Scenes.WizardContext>([createCardScene, editCardScene]);
 
 bot.use(session());
 bot.use(stage.middleware());
@@ -165,6 +246,8 @@ bot.action("continue", async (ctx) => {
 });
 
 bot.command("createcard", (ctx) => ctx.scene.enter("create-card-wizard"));
+
+bot.command("editcard", (ctx) => ctx.scene.enter("edit-card-wizard"));
 
 bot.command("mycard", async (ctx) => {
   const user = await db.findUserByTelegramId(ctx.from!.id);
