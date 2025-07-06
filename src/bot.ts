@@ -1,16 +1,20 @@
 import { Telegraf, Context, session, Scenes } from "telegraf";
 import { message } from "telegraf/filters";
 import dotenv from "dotenv";
+import { URLSearchParams } from "url";
+import { startServer } from "./api";
 
 const db = require("./database");
 import { BusinessCard } from "./types";
 
 dotenv.config();
 
-const { BOT_TOKEN, WORLD_ID_APP_ID, BOT_USERNAME } = process.env;
+const { BOT_TOKEN, WORLD_ID_APP_ID, BOT_USERNAME, API_BASE_URL } = process.env;
 if (!BOT_TOKEN || !WORLD_ID_APP_ID || !BOT_USERNAME) {
   throw new Error("Missing environment variables!");
 }
+
+const REDIRECT_URI = API_BASE_URL ? `${API_BASE_URL}/auth/worldid/callback` : `http://localhost:3000/auth/worldid/callback`;
 
 const createCardScene = new Scenes.WizardScene<any>(
   "create-card-wizard",
@@ -53,7 +57,7 @@ bot.use(async (ctx, next) => {
   if (allowedCommands.includes(messageText.split(" ")[0])) {
     return next();
   }
-  const user = await db.findUserByTelegramId(ctx.from.id);
+  const user = await db.findUserByTelegramId(ctx.from!.id);
   if (!user) {
     return ctx.reply(
       "You must be a verified human to use this bot. Please use /verify first.",
@@ -78,15 +82,15 @@ bot.start(async (ctx) => {
   if (deepLinkPayload) {
     const world_id_hash = `wid_${deepLinkPayload.slice(0, 16)}`;
     await db.createVerifiedUser(
-      ctx.from.id,
-      ctx.from.username || `user${ctx.from.id}`,
+      ctx.from!.id,
+      ctx.from!.username || `user${ctx.from!.id}`,
       world_id_hash,
     );
     await ctx.reply(
       "✅ Verification successful! You are now a verified human.\n\nUse /createcard to set up your professional profile.",
     );
   } else {
-    const user = await db.findUserByTelegramId(ctx.from.id);
+    const user = await db.findUserByTelegramId(ctx.from!.id);
     if (user) {
       await ctx.reply(
         "Welcome back! You are already verified. Use /mycard to see your card or /search to find others.",
@@ -107,7 +111,17 @@ bot.start(async (ctx) => {
 });
 
 const sendVerificationLink = (ctx: Context) => {
-  const verificationUrl = `https://id.worldcoin.org/authorize?app_id=${WORLD_ID_APP_ID}&action_id=my-action&signal=${ctx.from.id}&return_to=https://t.me/${BOT_USERNAME}`;
+  const params = new URLSearchParams({
+    app_id: WORLD_ID_APP_ID!,
+    action_id: "my-action",
+    signal: ctx.from!.id.toString(),
+    redirect_uri: REDIRECT_URI,
+    response_type: "code",
+    scope: "openid",
+    client_id: WORLD_ID_APP_ID!,
+    state: ctx.from!.id.toString(),
+  });
+  const verificationUrl = `https://id.worldcoin.org/authorize?${params.toString()}`;
   ctx.reply(
     "Click the button below to verify with World ID. You will be redirected back to this chat after completion.",
     {
@@ -127,7 +141,7 @@ bot.action("verify", (ctx) => {
 bot.command("createcard", (ctx) => ctx.scene.enter("create-card-wizard"));
 
 bot.command("mycard", async (ctx) => {
-  const user = await db.findUserByTelegramId(ctx.from.id);
+  const user = await db.findUserByTelegramId(ctx.from!.id);
   if (user) {
     await ctx.replyWithMarkdown(formatCard(user));
   } else {
@@ -142,7 +156,7 @@ bot.command("search", async (ctx) => {
   if (results.length === 0)
     return ctx.reply(`No users found with the name "${query}".`);
   const response = results
-    .map((r) => `👤 *${r.name}* (@${r.telegram_username}) - ${r.title}`)
+    .map((r: BusinessCard) => `👤 *${r.name}* (@${r.telegram_username}) - ${r.title}`)
     .join("\n");
   await ctx.replyWithMarkdown(
     "Found users:\n\n" +
@@ -163,7 +177,7 @@ bot.command("view", async (ctx) => {
 });
 
 bot.command("deletecard", async (ctx) => {
-  await db.deleteUser(ctx.from.id);
+  await db.deleteUser(ctx.from!.id);
   await ctx.reply(
     "Your business card and all associated data have been deleted.",
   );
@@ -171,6 +185,7 @@ bot.command("deletecard", async (ctx) => {
 
 async function startApp() {
   await db.initDb();
+  startServer();
   bot.launch();
   console.log("Bot is running...");
   process.once("SIGINT", () => bot.stop("SIGINT"));
