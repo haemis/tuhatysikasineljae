@@ -1,12 +1,9 @@
-// src/database.ts
-
 import { open, Database } from "sqlite";
 import sqlite3 from "sqlite3";
 import { BusinessCard } from "./types";
 
 let db: Database;
 
-// REMOVED 'export' from here
 async function initDb(): Promise<void> {
   db = await open({
     filename: "./database.db",
@@ -27,7 +24,6 @@ async function initDb(): Promise<void> {
   console.log("Database initialized.");
 }
 
-// REMOVED 'export' from here
 async function findUserByTelegramId(
   id: number,
 ): Promise<BusinessCard | undefined> {
@@ -37,7 +33,6 @@ async function findUserByTelegramId(
   );
 }
 
-// REMOVED 'export' from here
 async function findUserByUsername(
   username: string,
 ): Promise<BusinessCard | undefined> {
@@ -50,7 +45,6 @@ async function findUserByUsername(
   );
 }
 
-// REMOVED 'export' from here
 async function searchUsersByName(nameQuery: string): Promise<BusinessCard[]> {
   return db.all<BusinessCard[]>(
     "SELECT * FROM BusinessCards WHERE name LIKE ? LIMIT 10",
@@ -58,7 +52,6 @@ async function searchUsersByName(nameQuery: string): Promise<BusinessCard[]> {
   );
 }
 
-// REMOVED 'export' from here
 async function createVerifiedUser(
   telegram_id: number,
   telegram_username: string,
@@ -80,7 +73,6 @@ async function createVerifiedUser(
   );
 }
 
-// REMOVED 'export' from here
 async function updateUserCard(
   telegram_id: number,
   updates: Partial<Omit<BusinessCard, "telegram_id" | "world_id_hash">>,
@@ -95,13 +87,10 @@ async function updateUserCard(
   );
 }
 
-// REMOVED 'export' from here
 async function deleteUser(telegram_id: number): Promise<void> {
   await db.run("DELETE FROM BusinessCards WHERE telegram_id = ?", telegram_id);
 }
 
-// --- ADDED THIS BLOCK ---
-// Explicitly export all functions in a CommonJS-friendly way.
 module.exports = {
   initDb,
   findUserByTelegramId,

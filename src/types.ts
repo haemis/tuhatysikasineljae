@@ -1,5 +1,3 @@
-// src/types.ts
-
 export interface BusinessCard {
   world_id_hash: string;
   telegram_id: number;
@@ -7,5 +5,5 @@ export interface BusinessCard {
   name: string;
   title: string;
   bio: string;
-  linkedin_url?: string; // Optional
+  linkedin_url?: string;
 }
