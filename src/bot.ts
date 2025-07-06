@@ -156,7 +156,9 @@ const formatCard = (card: BusinessCard): string => {
   message += `\n*Title:* ${escapeMarkdown(card.title)}\n\n`;
   message += `*Bio:* ${escapeMarkdown(card.bio)}\n\n`;
   if (card.linkedin_url) {
-    message += `[LinkedIn Profile](${card.linkedin_url})\n`;
+    // const linkedinUsername = card.linkedin_url.match(/linkedin\.com\/in\/([^\/\?]+)/)?.[1] || 'Profile';
+    const linkedinUsername = "https://www.linkedin.com/in/profile/";
+    message += `*LinkedIn:* [${linkedinUsername}](${card.linkedin_url})\n`;
   }
   message += `*Telegram:* @${escapeMarkdown(card.telegram_username)}`;
   if (card.is_verified) {
