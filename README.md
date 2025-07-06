@@ -62,8 +62,28 @@ To enable World ID verification:
 - `/mycard` - View your current business card
 - `/search <name>` - Search for users by name
 - `/view @username` - View a specific user's business card
+- `/connect @username` - Send connection request to another user
+- `/requests` - View and respond to pending connection requests
+- `/connections` - View your network of connected users
 - `/verify` - Verify with World ID (if configured)
 - `/deletecard` - Delete your business card and data
+
+## Networking Features
+
+The bot includes a comprehensive networking system that allows users to connect with each other:
+
+### Connection Workflow
+1. **Discovery**: Use `/search <name>` to find users by name
+2. **View Profiles**: Use `/view @username` to see detailed business cards
+3. **Connect**: Click the "🤝 Connect" button or use `/connect @username` to send connection requests
+4. **Manage Requests**: Recipients use `/requests` to view and respond to pending requests
+5. **Network**: Use `/connections` to view your professional network
+
+### Connection Features
+- **Real-time Notifications**: Users receive instant notifications when they receive connection requests
+- **Status Indicators**: Clear visual indicators show connection status (pending, connected)
+- **Interactive Buttons**: Easy-to-use inline buttons for connecting and managing requests
+- **Network Overview**: View all your connections in one place
 
 ## Database Schema
 
@@ -79,6 +99,18 @@ CREATE TABLE BusinessCards (
   bio TEXT NOT NULL,
   linkedin_url TEXT,
   is_verified BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE Connections (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  requester_id INTEGER NOT NULL,
+  recipient_id INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (requester_id) REFERENCES BusinessCards (telegram_id),
+  FOREIGN KEY (recipient_id) REFERENCES BusinessCards (telegram_id),
+  UNIQUE(requester_id, recipient_id)
 );
 ```
 
