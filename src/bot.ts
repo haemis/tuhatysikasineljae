@@ -1,9 +1,7 @@
-// src/bot.ts
-
 import { Telegraf, Context, session, Scenes } from "telegraf";
 import { message } from "telegraf/filters";
 import dotenv from "dotenv";
-// --- THIS IS THE CORRECTED IMPORT ---
+
 const db = require("./database");
 import { BusinessCard } from "./types";
 
@@ -14,24 +12,22 @@ if (!BOT_TOKEN || !WORLD_ID_APP_ID || !BOT_USERNAME) {
   throw new Error("Missing environment variables!");
 }
 
-// --- The rest of the file is the same as the previous correct version ---
 const createCardScene = new Scenes.WizardScene<any>(
   "create-card-wizard",
-  // ... wizard steps
   async (ctx) => {
-    /* ... */ return ctx.wizard.next();
+    return ctx.wizard.next();
   },
   async (ctx) => {
     ctx.wizard.state.name = ctx.message.text;
-    /* ... */ return ctx.wizard.next();
+    return ctx.wizard.next();
   },
   async (ctx) => {
     ctx.wizard.state.title = ctx.message.text;
-    /* ... */ return ctx.wizard.next();
+    return ctx.wizard.next();
   },
   async (ctx) => {
     ctx.wizard.state.bio = ctx.message.text.substring(0, 200);
-    /* ... */ return ctx.wizard.next();
+    return ctx.wizard.next();
   },
   async (ctx) => {
     const linkedin_url =
