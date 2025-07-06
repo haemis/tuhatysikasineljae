@@ -138,13 +138,35 @@ async function updateUserCard(
   telegram_id: number,
   updates: Partial<Omit<BusinessCard, "telegram_id" | "world_id_hash">>,
 ): Promise<void> {
+  const setParts = [];
+  const values = [];
+  
+  if (updates.name !== undefined) {
+    setParts.push("name = ?");
+    values.push(updates.name);
+  }
+  if (updates.title !== undefined) {
+    setParts.push("title = ?");
+    values.push(updates.title);
+  }
+  if (updates.bio !== undefined) {
+    setParts.push("bio = ?");
+    values.push(updates.bio);
+  }
+  if (updates.linkedin_url !== undefined) {
+    setParts.push("linkedin_url = ?");
+    values.push(updates.linkedin_url);
+  }
+  
+  if (setParts.length === 0) {
+    return; // No updates to make
+  }
+  
+  values.push(telegram_id);
+  
   await db.run(
-    "UPDATE BusinessCards SET name = ?, title = ?, bio = ?, linkedin_url = ? WHERE telegram_id = ?",
-    updates.name,
-    updates.title,
-    updates.bio,
-    updates.linkedin_url,
-    telegram_id,
+    `UPDATE BusinessCards SET ${setParts.join(", ")} WHERE telegram_id = ?`,
+    ...values,
   );
 }
 
